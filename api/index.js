@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Conecta ao banco de dados SQLite (cria o arquivo se não existir)
-const db = new sqlite3.Database('./database.db', (err) => {
+const db = new sqlite3.Database('/tmp/database.db', (err) => {
   if (err) {
     console.error(err.message);
   }
