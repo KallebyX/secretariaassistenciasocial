@@ -1,9 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import sqlite3 from 'sqlite3';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const app = express();
 const port = 3001;
+const JWT_SECRET = 'seu-segredo-super-secreto-aqui'; // Troque por uma variável de ambiente em produção
 
 app.use(cors());
 app.use(express.json());
@@ -51,6 +54,15 @@ db.serialize(() => {
     name TEXT
   )`);
 
+  // Cria a tabela de usuários se ela não existir
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    cpf TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT CHECK(role IN ('secretaria', 'servidor', 'beneficiario')) NOT NULL
+  )`);
+
   // Cria a tabela de notícias se ela não existir
   db.run(`CREATE TABLE IF NOT EXISTS news (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,6 +84,27 @@ db.serialize(() => {
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(beneficiary_id) REFERENCES beneficiaries(id)
   )`);
+
+  // Adiciona usuários de exemplo
+  db.get("SELECT count(*) as count FROM users", (err, row) => {
+    if (err) { console.error("Erro ao verificar usuários:", err.message); return; }
+    if (row && row.count === 0) {
+        const stmt = db.prepare("INSERT INTO users (name, cpf, password_hash, role) VALUES (?, ?, ?, ?)");
+        const salt = bcrypt.genSaltSync(10);
+        
+        // Senha para todos é "senha123"
+        const passwordHash = bcrypt.hashSync("senha123", salt);
+
+        stmt.run("Secretária Exemplo", "99988877766", passwordHash, "secretaria");
+        stmt.run("Servidor Exemplo", "11122233344", passwordHash, "servidor");
+        stmt.run("Beneficiário Exemplo", "55566677788", passwordHash, "beneficiario");
+        
+        stmt.finalize(() => {
+            console.log('Usuários de exemplo inseridos na tabela users.');
+        });
+    }
+  });
+
 
   // Adiciona dados de exemplo
   db.get("SELECT count(*) as count FROM beneficiaries", (err, row) => {
@@ -124,8 +157,56 @@ db.serialize(() => {
 });
 
 
+// --- ROTAS DE AUTENTICAÇÃO ---
+app.post('/api/login', (req, res) => {
+  const { cpf, senha } = req.body;
+  if (!cpf || !senha) {
+    return res.status(400).json({ "error": "CPF e senha são obrigatórios." });
+  }
+
+  const sql = "SELECT * FROM users WHERE cpf = ?";
+  db.get(sql, [cpf], (err, user) => {
+    if (err) { return res.status(500).json({ "error": err.message }); }
+    if (!user) { return res.status(401).json({ "error": "Credenciais inválidas." }); }
+
+    const isPasswordCorrect = bcrypt.compareSync(senha, user.password_hash);
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ "error": "Credenciais inválidas." });
+    }
+
+    const access_token = jwt.sign({ id: user.id, cpf: user.cpf, role: user.role, name: user.name }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ access_token });
+  });
+});
+
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
+
+app.get('/api/profile', authenticateToken, (req, res) => {
+    // O middleware authenticateToken já validou o token e adicionou o payload do user a req.user
+    // Apenas retornamos as informações do usuário do payload do token.
+    // Em um caso real, você poderia querer buscar dados frescos do banco de dados aqui.
+    res.json({
+        id: req.user.id,
+        cpf: req.user.cpf,
+        name: req.user.name,
+        role: req.user.role
+    });
+});
+
+
 // --- ROTAS DE BENEFICIÁRIOS ---
-app.get('/api/beneficiaries', (req, res) => {
+app.get('/api/beneficiaries', authenticateToken, (req, res) => {
   const { search } = req.query;
   let sql = "SELECT * FROM beneficiaries";
   const params = [];
@@ -144,7 +225,7 @@ app.get('/api/beneficiaries', (req, res) => {
   });
 });
 
-app.get('/api/beneficiaries/:id', (req, res) => {
+app.get('/api/beneficiaries/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const sql = "SELECT * FROM beneficiaries WHERE id = ?";
   db.get(sql, [id], (err, row) => {
@@ -154,7 +235,7 @@ app.get('/api/beneficiaries/:id', (req, res) => {
   });
 });
 
-app.post('/api/beneficiaries', (req, res) => {
+app.post('/api/beneficiaries', authenticateToken, (req, res) => {
   const { name, cpf, nis, birthDate, address, phone } = req.body;
   const sql = `INSERT INTO beneficiaries (name, cpf, nis, birthDate, address, phone) VALUES (?, ?, ?, ?, ?, ?)`;
   const params = [name, cpf, nis, birthDate, address, phone];
@@ -164,7 +245,7 @@ app.post('/api/beneficiaries', (req, res) => {
   });
 });
 
-app.put('/api/beneficiaries/:id', (req, res) => {
+app.put('/api/beneficiaries/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { name, cpf, nis, birthDate, address, phone } = req.body;
   const sql = `UPDATE beneficiaries SET name = ?, cpf = ?, nis = ?, birthDate = ?, address = ?, phone = ? WHERE id = ?`;
@@ -175,7 +256,7 @@ app.put('/api/beneficiaries/:id', (req, res) => {
   });
 });
 
-app.delete('/api/beneficiaries/:id', (req, res) => {
+app.delete('/api/beneficiaries/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const sql = 'DELETE FROM beneficiaries WHERE id = ?';
   db.run(sql, id, function(err) {
@@ -186,7 +267,7 @@ app.delete('/api/beneficiaries/:id', (req, res) => {
 
 
 // --- ROTAS DE PROGRAMAS ---
-app.get('/api/programs', (req, res) => {
+app.get('/api/programs', authenticateToken, (req, res) => {
   const sql = "SELECT * FROM programs ORDER BY name";
   db.all(sql, [], (err, rows) => {
     if (err) { res.status(400).json({ "error": err.message }); return; }
@@ -194,7 +275,7 @@ app.get('/api/programs', (req, res) => {
   });
 });
 
-app.post('/api/programs', (req, res) => {
+app.post('/api/programs', authenticateToken, (req, res) => {
   const { name } = req.body;
   if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
   const sql = `INSERT INTO programs (name) VALUES (?)`;
@@ -204,7 +285,7 @@ app.post('/api/programs', (req, res) => {
   });
 });
 
-app.put('/api/programs/:id', (req, res) => {
+app.put('/api/programs/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
@@ -215,7 +296,7 @@ app.put('/api/programs/:id', (req, res) => {
   });
 });
 
-app.delete('/api/programs/:id', (req, res) => {
+app.delete('/api/programs/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   db.run('DELETE FROM beneficiary_programs WHERE program_id = ?', id, (err) => {
     if (err) { res.status(400).json({ "error": err.message }); return; }
@@ -229,7 +310,7 @@ app.delete('/api/programs/:id', (req, res) => {
 
 
 // --- ROTAS DE ASSOCIAÇÃO BENEFICIÁRIO-PROGRAMA ---
-app.get('/api/beneficiaries/:id/programs', (req, res) => {
+app.get('/api/beneficiaries/:id/programs', authenticateToken, (req, res) => {
   const { id } = req.params;
   const sql = `SELECT p.id, p.name FROM programs p JOIN beneficiary_programs bp ON p.id = bp.program_id WHERE bp.beneficiary_id = ?`;
   db.all(sql, [id], (err, rows) => {
@@ -238,7 +319,7 @@ app.get('/api/beneficiaries/:id/programs', (req, res) => {
   });
 });
 
-app.post('/api/beneficiaries/:id/programs', (req, res) => {
+app.post('/api/beneficiaries/:id/programs', authenticateToken, (req, res) => {
   const { id: beneficiary_id } = req.params;
   const { program_id } = req.body;
   const sql = `INSERT INTO beneficiary_programs (beneficiary_id, program_id) VALUES (?, ?)`;
@@ -248,7 +329,7 @@ app.post('/api/beneficiaries/:id/programs', (req, res) => {
   });
 });
 
-app.delete('/api/beneficiaries/:beneficiary_id/programs/:program_id', (req, res) => {
+app.delete('/api/beneficiaries/:beneficiary_id/programs/:program_id', authenticateToken, (req, res) => {
   const { beneficiary_id, program_id } = req.params;
   const sql = 'DELETE FROM beneficiary_programs WHERE beneficiary_id = ? AND program_id = ?';
   db.run(sql, [beneficiary_id, program_id], function(err) {
@@ -268,7 +349,7 @@ app.get('/api/news', (req, res) => {
 });
 
 // --- ROTAS DE AGENDAMENTOS ---
-app.get('/api/appointments', (req, res) => {
+app.get('/api/appointments', authenticateToken, (req, res) => {
   const { server_id, beneficiary_id } = req.query;
   let sql = `
     SELECT a.id, a.title, a.description, a.priority, a.status, a.createdAt, b.name as beneficiary_name, b.id as beneficiary_id
@@ -293,7 +374,7 @@ app.get('/api/appointments', (req, res) => {
   });
 });
 
-app.get('/api/beneficiaries/:id/appointments', (req, res) => {
+app.get('/api/beneficiaries/:id/appointments', authenticateToken, (req, res) => {
   const { id } = req.params;
   const sql = `SELECT a.id, a.title, a.description, a.priority, a.status, a.createdAt FROM appointments a WHERE a.beneficiary_id = ? ORDER BY a.createdAt DESC`;
   db.all(sql, [id], (err, rows) => {
@@ -302,7 +383,7 @@ app.get('/api/beneficiaries/:id/appointments', (req, res) => {
   });
 });
 
-app.post('/api/appointments', (req, res) => {
+app.post('/api/appointments', authenticateToken, (req, res) => {
   const { beneficiary_id, server_id, title, description, priority } = req.body;
   const sql = `INSERT INTO appointments (beneficiary_id, server_id, title, description, priority) VALUES (?, ?, ?, ?, ?)`;
   const params = [beneficiary_id, server_id, title, description, priority];
@@ -316,7 +397,7 @@ app.post('/api/appointments', (req, res) => {
   });
 });
 
-app.put('/api/appointments/:id', (req, res) => {
+app.put('/api/appointments/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const { title, description, priority, status } = req.body;
   const fields = [], params = [];
@@ -339,7 +420,7 @@ app.put('/api/appointments/:id', (req, res) => {
   });
 });
 
-app.delete('/api/appointments/:id', (req, res) => {
+app.delete('/api/appointments/:id', authenticateToken, (req, res) => {
     const { id } = req.params;
     const sql = 'DELETE FROM appointments WHERE id = ?';
     db.run(sql, id, function(err) {
@@ -349,7 +430,7 @@ app.delete('/api/appointments/:id', (req, res) => {
 });
 
 // --- ROTAS DE RELATÓRIOS ---
-app.get('/api/reports/stats', (req, res) => {
+app.get('/api/reports/stats', authenticateToken, (req, res) => {
   const queries = {
     totalBeneficiaries: "SELECT COUNT(*) as count FROM beneficiaries",
     totalAppointments: "SELECT COUNT(*) as count FROM appointments",
@@ -377,7 +458,7 @@ app.get('/api/reports/stats', (req, res) => {
 });
 
 // --- ROTAS DE CADÚNICO ---
-app.get('/api/cadunico/search', (req, res) => {
+app.get('/api/cadunico/search', authenticateToken, (req, res) => {
   const { cpf } = req.query;
   if (!cpf) { return res.status(400).json({ "error": "CPF é obrigatório" }); }
   const sql = "SELECT * FROM cadunico_data WHERE cpf = ?";
