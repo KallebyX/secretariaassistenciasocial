@@ -1,111 +1,166 @@
-import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
-
-interface Program {
-  id: number;
-  name: string;
-  description: string;
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import { api } from '../../services/api';
+import { Program } from '../../types';
+import { useToast } from '../../context/ToastContext';
+import Modal from '../../components/Modal';
 
 const ProgramManagementPage: React.FC = () => {
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
+  const [programName, setProgramName] = useState('');
+  const { addToast } = useToast();
+
+  const fetchPrograms = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/programs');
+      setPrograms(response.data.data);
+    } catch (error) {
+      addToast('Erro ao carregar a lista de programas.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast]);
 
   useEffect(() => {
     fetchPrograms();
-  }, []);
+  }, [fetchPrograms]);
 
-  const fetchPrograms = async () => {
-    const response = await api.get('/programs');
-    setPrograms(response.data.data);
+  const handleOpenModal = (program: Program | null = null) => {
+    setSelectedProgram(program);
+    setProgramName(program ? program.name : '');
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProgram(null);
+    setProgramName('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { name, description };
-    if (editingProgram) {
-      await api.put(`/programs/${editingProgram.id}`, payload);
-    } else {
-      await api.post('/programs', payload);
+    if (!programName.trim()) {
+      addToast('O nome do programa não pode ser vazio.', 'error');
+      return;
     }
-    fetchPrograms();
-    resetForm();
-  };
 
-  const handleEdit = (program: Program) => {
-    setEditingProgram(program);
-    setName(program.name);
-    setDescription(program.description);
+    const apiCall = selectedProgram
+      ? api.put(`/programs/${selectedProgram.id}`, { name: programName })
+      : api.post('/programs', { name: programName });
+
+    try {
+      await apiCall;
+      addToast(
+        `Programa ${selectedProgram ? 'atualizado' : 'criado'} com sucesso!`,
+        'success'
+      );
+      handleCloseModal();
+      fetchPrograms();
+    } catch (error) {
+      addToast(
+        `Erro ao ${selectedProgram ? 'atualizar' : 'criar'} programa.`,
+        'error'
+      );
+    }
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Tem certeza que deseja excluir este programa?')) {
-      await api.delete(`/programs/${id}`);
-      fetchPrograms();
+    if (window.confirm('Tem certeza que deseja excluir este programa? Esta ação não pode ser desfeita.')) {
+      try {
+        await api.delete(`/programs/${id}`);
+        addToast('Programa excluído com sucesso!', 'success');
+        fetchPrograms();
+      } catch (error) {
+        addToast('Erro ao excluir programa.', 'error');
+      }
     }
   };
 
-  const resetForm = () => {
-    setName('');
-    setDescription('');
-    setEditingProgram(null);
-  };
-
   return (
-    <div className="grid md:grid-cols-3 gap-8">
-      <div className="md:col-span-1 bg-white p-8 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-6">{editingProgram ? 'Editar Programa' : 'Novo Programa'}</h2>
+    <div className="container mx-auto p-6 bg-gray-50 min-h-screen">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Gerenciamento de Programas</h1>
+        <button
+          onClick={() => handleOpenModal()}
+          className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105"
+        >
+          Novo Programa
+        </button>
+      </div>
+
+      {loading ? (
+        <p className="text-center text-gray-600">Carregando programas...</p>
+      ) : (
+        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome do Programa</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {programs.map((program) => (
+                <tr key={program.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{program.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{program.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleOpenModal(program)}
+                      className="text-prefeitura-azul hover:text-blue-700 mr-4"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(program.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Excluir
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal title={selectedProgram ? 'Editar Programa' : 'Novo Programa'} isOpen={isModalOpen} onClose={handleCloseModal}>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="name" className="block text-gray-700 font-bold mb-2">Nome do Programa</label>
+            <label htmlFor="programName" className="block text-sm font-medium text-gray-700 mb-1">
+              Nome do Programa
+            </label>
             <input
+              id="programName"
               type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
+              value={programName}
+              onChange={(e) => setProgramName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-prefeitura-verde focus:border-prefeitura-verde"
               required
             />
           </div>
-          <div className="mb-6">
-            <label htmlFor="description" className="block text-gray-700 font-bold mb-2">Descrição</label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-              rows={4}
-            />
-          </div>
-          <div className="flex gap-4">
-            <button type="submit" className="bg-prefeitura-verde text-white font-bold py-2 px-4 rounded-lg">
-              {editingProgram ? 'Salvar Alterações' : 'Criar Programa'}
-            </button>
-            <button type="button" onClick={resetForm} className="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">
+          <div className="flex justify-end gap-4">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg"
+            >
               Cancelar
+            </button>
+            <button
+              type="submit"
+              className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              {selectedProgram ? 'Salvar Alterações' : 'Criar Programa'}
             </button>
           </div>
         </form>
-      </div>
-      <div className="md:col-span-2 bg-white p-8 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-6">Programas Sociais Cadastrados</h2>
-        <div className="space-y-4">
-          {programs.map(program => (
-            <div key={program.id} className="p-4 border rounded-lg flex justify-between items-center">
-              <div>
-                <h3 className="font-bold">{program.name}</h3>
-                <p className="text-sm text-gray-600">{program.description}</p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => handleEdit(program)} className="text-blue-500 hover:underline">Editar</button>
-                <button onClick={() => handleDelete(program.id)} className="text-red-500 hover:underline">Excluir</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      </Modal>
     </div>
   );
 };

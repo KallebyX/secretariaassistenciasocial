@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { api } from '../services/api';
 import { News } from '../types';
+import { motion, Variants } from 'framer-motion';
+import { ArrowRight, Users, Newspaper, ShieldCheck } from 'lucide-react';
 
 const HomePage: React.FC = () => {
   const [news, setNews] = useState<News[]>([]);
@@ -13,7 +15,7 @@ const HomePage: React.FC = () => {
     const fetchNews = async () => {
       try {
         const response = await api.get('/news');
-        setNews(response.data.data);
+        setNews(response.data.data.slice(0, 3)); // Pega apenas as 3 primeiras notícias
       } catch (err) {
         setError('Não foi possível carregar as notícias.');
         console.error(err);
@@ -27,94 +29,150 @@ const HomePage: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const day = date.toLocaleDateString('pt-BR', { day: '2-digit' });
-    const month = date.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
-    return { day, month };
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+      },
+    },
+  };
+
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 120,
+      },
+    },
   };
 
   return (
-    <div className="bg-gray-50">
     <Layout>
-      <main className="container mx-auto px-4">
-        <header className="relative text-center mb-16 text-white">
-          <img 
-            src="https://www.cacapavadosul.rs.gov.br/uploads/categories/1/downloads/1/642d755f92c67.jpg" 
-            alt="Crianças sorrindo em um ambiente de aprendizado e diversão." 
-            className="w-full h-96 object-cover rounded-b-lg"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col justify-center items-center rounded-b-lg">
-            <h1 className="text-5xl font-extrabold">Portal da Secretaria de Assistência Social</h1>
-            <p className="text-xl mt-4 max-w-2xl">Conectando você aos serviços e programas que transformam vidas em Caçapava do Sul.</p>
+      <div className="overflow-x-hidden">
+        {/* Hero Section */}
+        <motion.section 
+          className="bg-gradient-to-br from-brand-primary-700 to-brand-primary-900 text-white"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className="container mx-auto px-6 py-24 text-center">
+            <motion.h1 
+              className="text-4xl md:text-6xl font-heading font-extrabold leading-tight"
+              variants={itemVariants}
+            >
+              Portal de Assistência Social
+            </motion.h1>
+            <motion.p 
+              className="mt-4 text-lg md:text-xl text-brand-primary-100 max-w-3xl mx-auto"
+              variants={itemVariants}
+            >
+              Conectando cidadãos de Caçapava do Sul aos serviços e programas que promovem bem-estar e dignidade.
+            </motion.p>
+            <motion.div 
+              className="mt-10 flex justify-center gap-4"
+              variants={itemVariants}
+            >
+              <Link to="/login" className="bg-white text-brand-primary-800 font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 shadow-lg hover:shadow-xl">
+                Acessar Portal
+              </Link>
+              <a href="#noticias" className="bg-transparent border-2 border-white/80 text-white font-bold py-3 px-8 rounded-full text-lg transition-all transform hover:scale-105 hover:bg-white/10">
+                Ver Notícias
+              </a>
+            </motion.div>
           </div>
-        </header>
+        </motion.section>
 
-        <section id="acoes" aria-labelledby="acoes-heading" className="mb-16">
-          <h2 id="acoes-heading" className="text-4xl font-bold text-gray-800 mb-8 text-center">Nossas Ações</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-            <article className="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow transform hover:-translate-y-2">
-              <h3 className="text-2xl font-bold mb-3 text-prefeitura-verde">Programa Criança Feliz</h3>
-              <p className="text-gray-600">Acompanhamento de gestantes e crianças para promover o desenvolvimento infantil e fortalecer vínculos.</p>
-            </article>
-            <article className="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow transform hover:-translate-y-2">
-              <h3 className="text-2xl font-bold mb-3 text-prefeitura-verde">Fortalecimento de Vínculos</h3>
-              <p className="text-gray-600">Atividades em grupo para fortalecer os laços familiares e comunitários, prevenindo o isolamento.</p>
-            </article>
-            <article className="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-shadow transform hover:-translate-y-2">
-              <h3 className="text-2xl font-bold mb-3 text-prefeitura-verde">Cadastro Único</h3>
-              <p className="text-gray-600">A porta de entrada para mais de 20 programas sociais do Governo Federal. Mantenha seu cadastro atualizado.</p>
-            </article>
+        {/* Seção de Acesso Rápido */}
+        <section id="acesso-rapido" className="py-20 bg-white">
+          <div className="container mx-auto px-6">
+            <h2 className="text-4xl font-heading font-bold text-center text-brand-neutral-800 mb-16">Acesso Rápido</h2>
+            <motion.div 
+              className="grid md:grid-cols-3 gap-8"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.3 }}
+            >
+              <motion.div variants={itemVariants} className="bg-brand-neutral-50 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-brand-primary-100 text-brand-primary-700 mb-6">
+                  <Users size={32} />
+                </div>
+                <h3 className="text-2xl font-heading font-bold mb-3 text-brand-neutral-900">Portal do Cidadão</h3>
+                <p className="text-brand-neutral-600 mb-6">Consulte seus benefícios, agendamentos e informações de programas sociais.</p>
+                <Link to="/beneficiary-portal" className="font-bold text-brand-primary-700 hover:text-brand-primary-800 flex items-center group">
+                  Acessar agora <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-brand-neutral-50 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-brand-secondary-200 text-brand-secondary-800 mb-6">
+                  <ShieldCheck size={32} />
+                </div>
+                <h3 className="text-2xl font-heading font-bold mb-3 text-brand-neutral-900">Painel do Servidor</h3>
+                <p className="text-brand-neutral-600 mb-6">Gerencie atendimentos, beneficiários e visualize relatórios completos.</p>
+                <Link to="/login" className="font-bold text-brand-secondary-700 hover:text-brand-secondary-800 flex items-center group">
+                  Fazer Login <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </motion.div>
+              <motion.div variants={itemVariants} className="bg-brand-neutral-50 p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow transform hover:-translate-y-2 duration-300">
+                <div className="flex items-center justify-center h-16 w-16 rounded-full bg-red-100 text-red-700 mb-6">
+                  <Newspaper size={32} />
+                </div>
+                <h3 className="text-2xl font-heading font-bold mb-3 text-brand-neutral-900">Programas Sociais</h3>
+                <p className="text-brand-neutral-600 mb-6">Conheça os programas disponíveis, seus objetivos e como participar.</p>
+                <Link to="/programs" className="font-bold text-red-700 hover:text-red-800 flex items-center group">
+                  Saber mais <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
-        <section id="noticias" aria-labelledby="noticias-heading" className="mb-16">
-          <h2 id="noticias-heading" className="text-4xl font-bold text-gray-800 mb-8 text-center">Últimas Notícias</h2>
-          <div className="space-y-10">
-            {loading && <p className="text-center">Carregando notícias...</p>}
+        {/* Seção de Notícias */}
+        <section id="noticias" className="py-20">
+          <div className="container mx-auto px-6">
+            <h2 className="text-4xl font-heading font-bold text-center text-brand-neutral-800 mb-16">Últimas Notícias</h2>
+            {loading && <p className="text-center text-brand-neutral-500">Carregando notícias...</p>}
             {error && <p className="text-center text-red-500">{error}</p>}
             {!loading && !error && news.length === 0 && (
-              <p className="text-center text-gray-500">Nenhuma notícia encontrada.</p>
+              <p className="text-center text-brand-neutral-500">Nenhuma notícia encontrada no momento.</p>
             )}
-            {news.map((item) => {
-              const { day, month } = formatDate(item.createdAt);
-              return (
-                <article key={item.id} className="bg-white p-8 rounded-xl shadow-lg flex items-start gap-8 hover:shadow-2xl transition-shadow">
-                  <div className="flex-shrink-0 text-center">
-                    <p className="text-prefeitura-vermelho font-bold text-3xl">{day}</p>
-                    <p className="text-gray-500">{month}</p>
+            <motion.div 
+              className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+            >
+              {news.map((item) => (
+                <motion.article 
+                  key={item.id} 
+                  className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
+                  variants={itemVariants}
+                >
+                  <div className="p-6 flex-grow flex flex-col">
+                    <p className="text-sm text-brand-neutral-500 mb-2">{formatDate(item.createdAt)}</p>
+                    <h3 className="text-xl font-heading font-bold mb-3 text-brand-neutral-900 flex-grow">{item.title}</h3>
+                    <p className="text-brand-neutral-600 mb-6">{item.content.substring(0, 120)}...</p>
+                    <a href="#" className="font-bold text-brand-primary-700 hover:text-brand-primary-800 flex items-center mt-auto group">
+                      Ler matéria completa <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </a>
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold mb-2 text-prefeitura-vermelho">{item.title}</h3>
-                    <p className="text-gray-600">{item.content}</p>
-                    <p className="text-sm text-gray-500 mt-2">Por: {item.author}</p>
-                  </div>
-                </article>
-              );
-            })}
+                </motion.article>
+              ))}
+            </motion.div>
           </div>
         </section>
-
-        <section id="sobre" aria-labelledby="sobre-heading" className="mb-16 bg-prefeitura-verde text-white p-12 rounded-xl">
-          <h2 id="sobre-heading" className="text-4xl font-bold mb-6 text-center">Sobre o Sistema</h2>
-          <p className="text-lg max-w-4xl mx-auto text-center leading-relaxed">
-            Este sistema foi desenvolvido para modernizar e agilizar o acesso aos serviços da Secretaria de Assistência Social. 
-            Através dele, cidadãos e servidores podem interagir de forma mais eficiente, transparente e segura, facilitando o acesso a programas e o acompanhamento de solicitações.
-          </p>
-        </section>
-
-        <section id="acesso" aria-labelledby="acesso-heading" className="text-center py-12">
-            <h2 id="acesso-heading" className="text-3xl font-bold text-gray-800 mb-6">Pronto para Começar?</h2>
-            <div className="flex justify-center gap-6">
-                <Link to="/login" className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105">
-                    Login
-                </Link>
-                <Link to="/register" className="bg-prefeitura-vermelho hover:opacity-90 text-white font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105">
-                    Cadastro
-                </Link>
-            </div>
-        </section>
-      </main>
+      </div>
     </Layout>
-    </div>
   );
 };
 

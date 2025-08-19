@@ -8,10 +8,10 @@ Este documento delineia o plano de desenvolvimento para o sistema completo da Se
 - [x] **Backend:**
   - [x] Criar modelo de dados do Beneficiário (Nome, CPF, NIS, Endereço, Contato, etc.).
   - [x] Implementar endpoints da API (CRUD - Create, Read, Update, Delete) para beneficiários.
-  - [ ] Implementar lógica de busca e filtragem no backend.
+  - [x] Implementar lógica de busca e filtragem no backend.
 - [x] **Frontend (Visão do Servidor/Secretário):**
   - [x] Criar a página `BeneficiaryListPage.tsx` para exibir todos os beneficiários em uma tabela.
-  - [ ] Implementar componentes de UI de busca e filtro na página de listagem.
+  - [x] Implementar componentes de UI de busca e filtro na página de listagem.
   - [x] Criar a página `BeneficiaryProfilePage.tsx` para mostrar informações detalhadas de um único beneficiário.
   - [x] Criar o componente `BeneficiaryForm.tsx` (para criação e edição) com validação de entrada.
   - [x] Integrar os componentes do frontend com a API do backend.
@@ -20,15 +20,15 @@ Este documento delineia o plano de desenvolvimento para o sistema completo da Se
 ---
 
 ### **Fase 2: Gestão de Programas e Serviços**
-- [ ] **Backend:**
-  - [ ] Criar modelo de dados do Programa (Nome, Descrição, Critérios de Elegibilidade).
-  - [ ] Criar endpoints da API para operações CRUD em Programas.
-  - [ ] Criar uma tabela/lógica de ligação para associar Beneficiários a Programas.
-  - [ ] Criar modelo de Serviço/Atendimento (ex: 'Visita', 'Solicitação de Documento').
-  - [ ] API para registrar novos serviços/atendimentos para um beneficiário.
-- [ ] **Frontend:**
-  - [ ] UI para Gerenciamento de Programas (CRUD).
-  - [ ] Na `BeneficiaryProfilePage.tsx`, adicionar uma seção para visualizar/adicionar/remover o beneficiário de programas.
+- [x] **Backend:**
+  - [x] Criar modelo de dados do Programa (Nome, Descrição, Critérios de Elegibilidade).
+  - [x] Criar endpoints da API para operações CRUD em Programas.
+  - [x] Criar uma tabela/lógica de ligação para associar Beneficiários a Programas.
+  - [x] Criar modelo de Serviço/Atendimento (ex: 'Visita', 'Solicitação de Documento').
+  - [x] API para registrar novos serviços/atendimentos para um beneficiário.
+- [x] **Frontend:**
+  - [x] UI para Gerenciamento de Programas (CRUD).
+  - [x] Na `BeneficiaryProfilePage.tsx`, adicionar uma seção para visualizar/adicionar/remover o beneficiário de programas.
   - [ ] Na `BeneficiaryProfilePage.tsx`, adicionar uma linha do tempo/histórico de serviços/atendimentos.
   - [ ] Criar um `AttendanceLogForm.tsx` para os servidores registrarem novas interações.
 

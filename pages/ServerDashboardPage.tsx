@@ -1,17 +1,20 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import type { Task, Family } from '../types';
+import type { Appointment as Task } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Modal from '../components/Modal';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, MoreHorizontal, Clock, User, Tag, Calendar } from 'lucide-react';
+import { useForm, SubmitHandler } from 'react-hook-form';
 
 // --- KANBAN COMPONENTS ---
 
-const priorityClasses = {
-    'Alta': 'bg-red-100 text-red-800',
-    'Média': 'bg-yellow-100 text-yellow-800',
-    'Baixa': 'bg-blue-100 text-blue-800',
+const priorityClasses: { [key: string]: string } = {
+    'Alta': 'bg-red-100 text-red-800 border-red-200',
+    'Média': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    'Baixa': 'bg-green-100 text-green-800 border-green-200',
 };
 
 const TaskCard: React.FC<{ task: Task; onUpdate: () => void, onSelect: (task: Task) => void }> = ({ task, onUpdate, onSelect }) => {
@@ -23,11 +26,14 @@ const TaskCard: React.FC<{ task: Task; onUpdate: () => void, onSelect: (task: Ta
     const handleStatusChange = async (newStatus: Task['status']) => {
         if (!user?.token) return;
         try {
-            await apiUpdateTaskStatus(user.token, task.id, newStatus);
+            await api.patch(`/appointments/${task.id}/status`, { status: newStatus }, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
             addToast(`Tarefa movida para "${newStatus}"`, 'success');
             onUpdate();
         } catch (e) {
             addToast('Erro ao atualizar tarefa', 'error');
+            console.error(e);
         }
         setIsDropdownOpen(false);
     };
@@ -39,248 +45,293 @@ const TaskCard: React.FC<{ task: Task; onUpdate: () => void, onSelect: (task: Ta
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [dropdownRef]);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const cardVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: { y: 0, opacity: 1, transition: { type: 'spring' } },
+        exit: { y: -20, opacity: 0 }
+    };
 
     return (
-        <div className="bg-white p-4 mb-3 rounded-lg shadow-sm border border-gray-200 group transition-shadow hover:shadow-lg">
+        <motion.div 
+            variants={cardVariants}
+            layout
+            className="bg-white p-4 mb-3 rounded-xl shadow-sm border border-gray-200 group transition-shadow hover:shadow-md cursor-pointer"
+            onClick={() => onSelect(task)}
+        >
             <div className="flex justify-between items-start">
-                <p className="font-semibold text-gray-800 break-words w-full cursor-pointer" onClick={() => onSelect(task)}>{task.titulo}</p>
+                <p className="font-semibold text-gray-800 break-words w-full pr-2">{task.title}</p>
                  <div className="relative dropdown" ref={dropdownRef}>
-                    <button onClick={() => setIsDropdownOpen(prev => !prev)} className="text-gray-500 hover:text-gray-800 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
+                    <button onClick={(e) => { e.stopPropagation(); setIsDropdownOpen(prev => !prev); }} className="text-gray-400 hover:text-gray-700 p-1 rounded-full">
+                         <MoreHorizontal size={20} />
                     </button>
+                    <AnimatePresence>
                     {isDropdownOpen && (
-                        <div className="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl z-20">
-                             {task.status !== 'Pendente' && <a href="#" onClick={(e) => { e.preventDefault(); handleStatusChange('Pendente') }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mover para Pendente</a>}
-                             {task.status !== 'Em Andamento' && <a href="#" onClick={(e) => { e.preventDefault(); handleStatusChange('Em Andamento')}} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mover para Em Andamento</a>}
-                             {task.status !== 'Concluido' && <a href="#" onClick={(e) => { e.preventDefault(); handleStatusChange('Concluido')}} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Mover para Concluído</a>}
-                        </div>
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.1 }}
+                            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-20 border"
+                        >
+                             {task.status !== 'Pendente' && <a href="#" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStatusChange('Pendente') }} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg">Mover para Pendente</a>}
+                             {task.status !== 'Em Andamento' && <a href="#" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStatusChange('Em Andamento')}} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mover para Em Andamento</a>}
+                             {task.status !== 'Realizado' && <a href="#" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleStatusChange('Realizado')}} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-b-lg">Mover para Realizado</a>}
+                        </motion.div>
                     )}
+                    </AnimatePresence>
                 </div>
-
             </div>
-            <p className="text-sm text-gray-600 mt-2 cursor-pointer" onClick={() => onSelect(task)}>{task.descricao.substring(0, 70)}...</p>
-            <div className="flex items-center justify-between mt-3 text-xs">
-                <span className={`px-2 py-1 font-semibold leading-tight rounded-full ${priorityClasses[task.prioridade]}`}>
-                    {task.prioridade}
+            <p className="text-sm text-gray-500 mt-2">{task.description.substring(0, 70)}...</p>
+            <div className="flex items-center justify-between mt-4 text-xs">
+                <span className={`px-2.5 py-1 font-medium leading-tight rounded-full border ${priorityClasses[task.priority]}`}>
+                    {task.priority}
                 </span>
-                <span className="text-gray-500">{task.dataCriacao}</span>
+                <div className="flex items-center text-gray-500">
+                    <Calendar size={14} className="mr-1" />
+                    <span>{new Date(task.date).toLocaleDateString()}</span>
+                </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
 const KanbanColumn: React.FC<{ title: string; tasks: Task[]; onUpdate: () => void, onSelectTask: (task: Task) => void }> = ({ title, tasks, onUpdate, onSelectTask }) => {
+    const columnVariants = {
+        hidden: { opacity: 0, x: -20 },
+        visible: { opacity: 1, x: 0, transition: { duration: 0.5, staggerChildren: 0.1 } }
+    };
     return (
-        <div className="bg-gray-100 rounded-lg p-3 w-full md:w-1/3 flex flex-col">
-            <h3 className="font-bold text-gray-800 mb-4 px-1 text-lg">{title} <span className="text-sm font-medium text-gray-500">{tasks.length}</span></h3>
-            <div className="flex-grow overflow-y-auto">
-                {tasks.map(task => (
-                    <TaskCard key={task.id} task={task} onUpdate={onUpdate} onSelect={onSelectTask}/>
-                ))}
+        <motion.div 
+            variants={columnVariants}
+            className="bg-gray-50/80 rounded-xl p-4 w-full md:w-1/3 flex flex-col border"
+        >
+            <h3 className="font-bold text-gray-800 mb-4 px-1 text-lg">{title} <span className="text-sm font-medium text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">{tasks.length}</span></h3>
+            <div className="flex-grow overflow-y-auto pr-2 -mr-2">
+                <AnimatePresence>
+                    {tasks.map(task => (
+                        <TaskCard key={task.id} task={task} onUpdate={onUpdate} onSelect={onSelectTask}/>
+                    ))}
+                </AnimatePresence>
             </div>
-        </div>
+        </motion.div>
     );
 };
 
-const KanbanView: React.FC = () => {
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [isCreateModalOpen, setCreateModalOpen] = useState(false);
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-    const { user } = useAuth();
-
-    const fetchAndSetTasks = useCallback(() => {
-        if (user?.token) {
-            apiFetchTasks(user.token).then(setTasks);
-        }
-    }, [user?.token]);
-    
-    useEffect(() => {
-        fetchAndSetTasks();
-    }, [fetchAndSetTasks]);
-
-    const columns: { title: Task['status'], tasks: Task[] }[] = [
-        { title: 'Pendente', tasks: tasks.filter(t => t.status === 'Pendente') },
-        { title: 'Em Andamento', tasks: tasks.filter(t => t.status === 'Em Andamento') },
-        { title: 'Concluido', tasks: tasks.filter(t => t.status === 'Concluido') }
-    ];
-
-    return (
-        <>
-            <div className="flex justify-end mb-6">
-                 <button onClick={() => setCreateModalOpen(true)} className="bg-brand-primary-900 text-white font-semibold px-4 py-2 rounded-lg hover:bg-brand-primary-800 transition-colors flex items-center space-x-2">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
-                    <span>Nova Tarefa</span>
-                </button>
-            </div>
-            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-                {columns.map(col => (
-                    <KanbanColumn key={col.title} title={col.title} tasks={col.tasks} onUpdate={fetchAndSetTasks} onSelectTask={setSelectedTask} />
-                ))}
-            </div>
-
-            <Modal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} title="Criar Nova Tarefa">
-                <CreateTaskForm onTaskCreated={() => { fetchAndSetTasks(); setCreateModalOpen(false); }} onClose={() => setCreateModalOpen(false)} />
-            </Modal>
-            
-            <Modal isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} title={selectedTask?.titulo || ''}>
-                {selectedTask && <TaskDetails task={selectedTask} />}
-            </Modal>
-        </>
-    );
+type FormInputs = {
+    title: string;
+    description: string;
+    priority: 'Alta' | 'Média' | 'Baixa';
+    beneficiary_id: number;
+    date: string;
 };
 
-const CreateTaskForm: React.FC<{ onTaskCreated: () => void, onClose: () => void }> = ({ onTaskCreated, onClose }) => {
-    const [titulo, setTitulo] = useState('');
-    const [descricao, setDescricao] = useState('');
-    const [prioridade, setPrioridade] = useState<'Baixa' | 'Média' | 'Alta'>('Média');
-    const { user } = useAuth();
+const CreateTaskForm: React.FC<{ onTaskCreated: () => void, closeModal: () => void }> = ({ onTaskCreated, closeModal }) => {
+    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormInputs>();
     const { addToast } = useToast();
+    const { user } = useAuth();
+    const [beneficiaries, setBeneficiaries] = useState<{id: number, name: string}[]>([]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!user?.token || !titulo) return;
+    useEffect(() => {
+        const fetchBeneficiaries = async () => {
+            try {
+                const response = await api.get('/beneficiaries');
+                setBeneficiaries(response.data.data);
+            } catch (error) {
+                console.error("Failed to fetch beneficiaries", error);
+                addToast("Erro ao carregar beneficiários", 'error');
+            }
+        };
+        fetchBeneficiaries();
+    }, [addToast]);
+
+    const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+        if (!user?.token) {
+            addToast("Autenticação necessária", 'error');
+            return;
+        }
         try {
-            await apiCreateTask(user.token, { titulo, descricao, prioridade, status: 'Pendente' });
-            addToast('Nova tarefa criada com sucesso!', 'success');
+            const appointmentData = {
+                ...data,
+                beneficiary_id: Number(data.beneficiary_id),
+            };
+            await api.post('/appointments', appointmentData, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            addToast("Agendamento criado com sucesso!", 'success');
             onTaskCreated();
-        } catch {
-            addToast('Falha ao criar tarefa.', 'error');
+            closeModal();
+        } catch (error) {
+            console.error("Failed to create appointment:", error);
+            addToast("Erro ao criar agendamento", 'error');
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-             <div>
-                <label className="block text-sm font-medium text-gray-700">Título</label>
-                <input type="text" value={titulo} onChange={e => setTitulo(e.target.value)} required className="mt-1 block w-full border border-gray-300 px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary-500 focus:border-brand-primary-500"/>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700">Título</label>
+                <input {...register("title", { required: "Título é obrigatório" })} id="title" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-prefeitura-azul focus:border-prefeitura-azul sm:text-sm" />
+                {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
             </div>
             <div>
-                <label className="block text-sm font-medium text-gray-700">Descrição</label>
-                <textarea value={descricao} onChange={e => setDescricao(e.target.value)} rows={4} className="mt-1 block w-full border border-gray-300 px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary-500 focus:border-brand-primary-500"></textarea>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700">Descrição</label>
+                <textarea {...register("description", { required: "Descrição é obrigatória" })} id="description" rows={3} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-prefeitura-azul focus:border-prefeitura-azul sm:text-sm"></textarea>
+                {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
             </div>
-             <div>
-                <label className="block text-sm font-medium text-gray-700">Prioridade</label>
-                <select value={prioridade} onChange={e => setPrioridade(e.target.value as any)} className="mt-1 block w-full border border-gray-300 px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary-500 focus:border-brand-primary-500">
-                    <option>Baixa</option>
-                    <option>Média</option>
-                    <option>Alta</option>
+            <div>
+                <label htmlFor="beneficiary_id" className="block text-sm font-medium text-gray-700">Associar ao Beneficiário</label>
+                <select {...register("beneficiary_id", { required: "Selecione um beneficiário" })} id="beneficiary_id" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-prefeitura-azul focus:border-prefeitura-azul sm:text-sm">
+                    <option value="">Selecione...</option>
+                    {beneficiaries.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
+                {errors.beneficiary_id && <p className="text-red-500 text-xs mt-1">{errors.beneficiary_id.message}</p>}
             </div>
-            <div className="flex justify-end space-x-2">
-                <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-                <button type="submit" className="py-2 px-4 bg-brand-primary-900 text-white rounded-md hover:bg-brand-primary-800">Criar Tarefa</button>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="priority" className="block text-sm font-medium text-gray-700">Prioridade</label>
+                    <select {...register("priority", { required: "Prioridade é obrigatória" })} id="priority" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-prefeitura-azul focus:border-prefeitura-azul sm:text-sm">
+                        <option>Baixa</option>
+                        <option>Média</option>
+                        <option>Alta</option>
+                    </select>
+                    {errors.priority && <p className="text-red-500 text-xs mt-1">{errors.priority.message}</p>}
+                </div>
+                <div>
+                    <label htmlFor="date" className="block text-sm font-medium text-gray-700">Data</label>
+                    <input type="date" {...register("date", { required: "Data é obrigatória" })} id="date" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-prefeitura-azul focus:border-prefeitura-azul sm:text-sm" />
+                    {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
+                </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={closeModal} className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Cancelar</button>
+                <button type="submit" disabled={isSubmitting} className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-prefeitura-azul hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-prefeitura-azul disabled:opacity-50">
+                    {isSubmitting ? 'Criando...' : 'Criar Agendamento'}
+                </button>
             </div>
         </form>
+    );
+};
+
+const TaskDetailModal: React.FC<{ task: Task, onClose: () => void }> = ({ task, onClose }) => {
+    return (
+        <Modal isOpen={!!task} onClose={onClose} title="Detalhes do Agendamento">
+            <div className="space-y-4 text-gray-700">
+                <h3 className="text-xl font-bold text-gray-900">{task.title}</h3>
+                <p className="text-base">{task.description}</p>
+                <hr/>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <Tag size={16} className="text-prefeitura-azul" />
+                        <strong>Prioridade:</strong>
+                        <span className={`px-2.5 py-1 font-medium leading-tight rounded-full border text-xs ${priorityClasses[task.priority]}`}>{task.priority}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Clock size={16} className="text-prefeitura-azul" />
+                        <strong>Status:</strong>
+                        <span>{task.status}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-prefeitura-azul" />
+                        <strong>Data:</strong>
+                        <span>{new Date(task.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <User size={16} className="text-prefeitura-azul" />
+                        <strong>Beneficiário:</strong>
+                        <span>{task.beneficiary_name || 'Não informado'}</span>
+                    </div>
+                </div>
+                 <div className="flex justify-end pt-4">
+                    <button onClick={onClose} className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </Modal>
     )
 }
 
-const TaskDetails: React.FC<{task: Task}> = ({task}) => (
-    <div className="space-y-4">
-        <p><strong className="font-semibold text-gray-600">Descrição:</strong><br/>{task.descricao}</p>
-        <p><strong className="font-semibold text-gray-600">Status:</strong> {task.status}</p>
-        <p><strong className="font-semibold text-gray-600">Prioridade:</strong> <span className={`px-2 py-1 font-semibold leading-tight rounded-full text-xs ${priorityClasses[task.prioridade]}`}>{task.prioridade}</span></p>
-        <p><strong className="font-semibold text-gray-600">Família Associada:</strong> {task.familiaAssociada || 'N/A'}</p>
-        <p><strong className="font-semibold text-gray-600">Data de Criação:</strong> {task.dataCriacao}</p>
-    </div>
-)
-
-// --- FAMILY MANAGEMENT COMPONENTS ---
-
-const FamilyListView: React.FC = () => {
-    const [families, setFamilies] = useState<Family[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
+const ServerDashboardPage: React.FC = () => {
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const { user } = useAuth();
+    const { addToast } = useToast();
+
+    const fetchAndSetTasks = useCallback(async () => {
+        if (user?.token) {
+            try {
+                const response = await api.get('/appointments/server', {
+                    headers: { Authorization: `Bearer ${user.token}` }
+                });
+                setTasks(response.data.data);
+            } catch (error) {
+                console.error("Failed to fetch tasks:", error);
+                addToast("Erro ao buscar agendamentos", 'error');
+            }
+        }
+    }, [user?.token, addToast]);
 
     useEffect(() => {
-        if(user?.token) {
-            apiFetchFamilies(user.token).then(setFamilies);
-        }
-    }, [user?.token]);
+        fetchAndSetTasks();
+    }, [fetchAndSetTasks]);
 
-    const filteredFamilies = families.filter(family => 
-        family.nome_responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        family.cpf_responsavel.includes(searchTerm)
-    );
-    
+    const tasksPendente = tasks.filter(t => t.status === 'Pendente');
+    const tasksEmAndamento = tasks.filter(t => t.status === 'Em Andamento');
+    const tasksConcluido = tasks.filter(t => t.status === 'Realizado');
+
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="mb-4">
-                <input 
-                    type="text"
-                    placeholder="Buscar por nome ou CPF..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="w-full max-w-sm border border-gray-300 px-3 py-2 rounded-md shadow-sm focus:outline-none focus:ring-brand-primary-500 focus:border-brand-primary-500"
-                />
-            </div>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left text-gray-500">
-                    <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                        <tr>
-                            <th scope="col" className="px-6 py-3">Responsável</th>
-                            <th scope="col" className="px-6 py-3">CPF</th>
-                            <th scope="col" className="px-6 py-3">Bairro</th>
-                            <th scope="col" className="px-6 py-3">Membros</th>
-                            <th scope="col" className="px-6 py-3">CadÚnico</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredFamilies.map(family => (
-                            <tr key={family.id} className="bg-white border-b hover:bg-gray-50">
-                                <th scope="row" className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">{family.nome_responsavel}</th>
-                                <td className="px-6 py-4">{family.cpf_responsavel}</td>
-                                <td className="px-6 py-4">{family.bairro}</td>
-                                <td className="px-6 py-4">{family.membros}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-1 font-semibold text-xs rounded-full ${family.cadunico_atualizado ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                        {family.cadunico_atualizado ? 'Atualizado' : 'Pendente'}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    );
-}
-
-// --- MAIN PAGE COMPONENT ---
-
-const ServerDashboardPage: React.FC = () => {
-    type Tab = 'tasks' | 'families';
-    const [activeTab, setActiveTab] = useState<Tab>('tasks');
-    
-    const tabs = [
-        { id: 'tasks', label: 'Painel de Tarefas', component: <KanbanView /> },
-        { id: 'families', label: 'Famílias', component: <FamilyListView /> },
-    ];
-    
-    return (
-        <div className="animate-slide-in">
-             <div className="flex justify-between items-center mb-6">
-                 <h2 className="text-3xl font-bold text-gray-800">Painel do Servidor</h2>
-                 <Link to="/schedule" className="bg-prefeitura-amarelo hover:opacity-90 text-gray-800 font-bold py-2 px-4 rounded-lg">
-                    Ver Agenda
-                 </Link>
-            </div>
-           
-            <div className="mb-6 bg-white p-2 rounded-lg shadow-sm flex space-x-1 sm:space-x-2">
-                {tabs.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id as Tab)} className={`px-4 py-2 font-semibold rounded-md transition-colors text-sm sm:text-base ${activeTab === tab.id ? 'bg-brand-primary-900 text-white shadow' : 'text-gray-600 hover:bg-gray-100'}`}>
-                        {tab.label}
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className="p-4 sm:p-6 lg:p-8"
+        >
+            <header className="flex flex-wrap justify-between items-center gap-4 mb-8">
+                <h2 className="text-4xl font-bold text-gray-800">Meu Painel</h2>
+                <div className="flex items-center gap-4">
+                    <Link to="/admin/beneficiaries" className="bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm border transition-transform transform hover:scale-105 flex items-center gap-2">
+                        <User size={18} /> Ver Beneficiários
+                    </Link>
+                    <button onClick={() => setCreateModalOpen(true)} className="bg-prefeitura-azul hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg shadow-sm transition-transform transform hover:scale-105 flex items-center gap-2">
+                        <Plus size={18} /> Novo Agendamento
                     </button>
-                ))}
-            </div>
+                </div>
+            </header>
+
+            <motion.div 
+                className="flex flex-col md:flex-row gap-6"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                    visible: { transition: { staggerChildren: 0.2 } }
+                }}
+            >
+                <KanbanColumn title="Pendente" tasks={tasksPendente} onUpdate={fetchAndSetTasks} onSelectTask={setSelectedTask} />
+                <KanbanColumn title="Em Andamento" tasks={tasksEmAndamento} onUpdate={fetchAndSetTasks} onSelectTask={setSelectedTask} />
+                <KanbanColumn title="Realizado" tasks={tasksConcluido} onUpdate={fetchAndSetTasks} onSelectTask={setSelectedTask} />
+            </motion.div>
+
+            <AnimatePresence>
+                {isCreateModalOpen && (
+                    <Modal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)} title="Criar Novo Agendamento">
+                        <CreateTaskForm 
+                            onTaskCreated={fetchAndSetTasks}
+                            closeModal={() => setCreateModalOpen(false)}
+                        />
+                    </Modal>
+                )}
+            </AnimatePresence>
             
-            <div>
-                {tabs.find(tab => tab.id === activeTab)?.component}
-            </div>
-        </div>
+            <AnimatePresence>
+                {selectedTask && (
+                    <TaskDetailModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 };
 

@@ -82,10 +82,11 @@ export interface Appointment {
   beneficiary_id: number;
   beneficiary_name?: string;
   server_id?: number;
-  date: string;
-  time: string;
-  reason: string;
-  status: 'Agendado' | 'Realizado' | 'Cancelado';
+  title: string;
+  description: string;
+  createdAt: string; // Changed from date
+  priority: 'Baixa' | 'Média' | 'Alta';
+  status: 'Pendente' | 'Em Andamento' | 'Realizado';
 }
 
 export interface Beneficiary {

@@ -16,62 +16,115 @@ const db = new sqlite3.Database('/tmp/database.db', (err) => {
   console.log('Conectado ao banco de dados SQLite.');
 });
 
-// Cria a tabela de beneficiários se ela não existir
-db.run(`CREATE TABLE IF NOT EXISTS beneficiaries (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  cpf TEXT NOT NULL UNIQUE,
-  nis TEXT,
-  birthDate TEXT,
-  address TEXT,
-  phone TEXT
-)`);
+// Serializa a criação do banco de dados para garantir a ordem de execução
+db.serialize(() => {
+  // Cria a tabela de beneficiários se ela não existir
+  db.run(`CREATE TABLE IF NOT EXISTS beneficiaries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    cpf TEXT NOT NULL UNIQUE,
+    nis TEXT,
+    birthDate TEXT,
+    address TEXT,
+    phone TEXT
+  )`);
 
-// Cria a tabela de programas se ela não existir
-db.run(`CREATE TABLE IF NOT EXISTS programs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE
-)`);
+  // Cria a tabela de programas se ela não existir
+  db.run(`CREATE TABLE IF NOT EXISTS programs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+  )`);
 
-// Cria a tabela de associação entre beneficiários e programas
-db.run(`CREATE TABLE IF NOT EXISTS beneficiary_programs (
-  beneficiary_id INTEGER,
-  program_id INTEGER,
-  FOREIGN KEY(beneficiary_id) REFERENCES beneficiaries(id),
-  FOREIGN KEY(program_id) REFERENCES programs(id),
-  PRIMARY KEY (beneficiary_id, program_id)
-)`);
+  // Cria a tabela de associação entre beneficiários e programas
+  db.run(`CREATE TABLE IF NOT EXISTS beneficiary_programs (
+    beneficiary_id INTEGER,
+    program_id INTEGER,
+    FOREIGN KEY(beneficiary_id) REFERENCES beneficiaries(id),
+    FOREIGN KEY(program_id) REFERENCES programs(id),
+    PRIMARY KEY (beneficiary_id, program_id)
+  )`);
 
-// Cria a tabela para armazenar dados do Cadastro Único (versão local)
-db.run(`CREATE TABLE IF NOT EXISTS cadunico_data (
-  cpf TEXT PRIMARY KEY,
-  nis TEXT,
-  name TEXT
-)`);
+  // Cria a tabela para armazenar dados do Cadastro Único (versão local)
+  db.run(`CREATE TABLE IF NOT EXISTS cadunico_data (
+    cpf TEXT PRIMARY KEY,
+    nis TEXT,
+    name TEXT
+  )`);
 
-// Cria a tabela de notícias se ela não existir
-db.run(`CREATE TABLE IF NOT EXISTS news (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  author TEXT,
-  createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
+  // Cria a tabela de notícias se ela não existir
+  db.run(`CREATE TABLE IF NOT EXISTS news (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    author TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 
-// Cria a tabela de agendamentos se ela não existir
-db.run(`CREATE TABLE IF NOT EXISTS appointments (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  beneficiary_id INTEGER NOT NULL,
-  server_id INTEGER,
-  date TEXT NOT NULL,
-  time TEXT NOT NULL,
-  reason TEXT,
-  status TEXT DEFAULT 'Agendado',
-  FOREIGN KEY(beneficiary_id) REFERENCES beneficiaries(id)
-)`);
+  // Cria a tabela de agendamentos se ela não existir
+  db.run(`CREATE TABLE IF NOT EXISTS appointments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    beneficiary_id INTEGER NOT NULL,
+    server_id INTEGER,
+    title TEXT NOT NULL,
+    description TEXT,
+    priority TEXT CHECK(priority IN ('Baixa', 'Média', 'Alta')) NOT NULL DEFAULT 'Média',
+    status TEXT CHECK(status IN ('Pendente', 'Em Andamento', 'Realizado')) NOT NULL DEFAULT 'Pendente',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(beneficiary_id) REFERENCES beneficiaries(id)
+  )`);
+
+  // Adiciona dados de exemplo
+  db.get("SELECT count(*) as count FROM beneficiaries", (err, row) => {
+      if (err) { console.error("Erro ao verificar beneficiários:", err.message); return; }
+      if(row && row.count === 0) {
+          const stmt = db.prepare("INSERT INTO beneficiaries (name, cpf, nis, birthDate, address, phone) VALUES (?, ?, ?, ?, ?, ?)");
+          stmt.run("Maria da Silva", "123.456.789-00", "12345678901", "1985-05-20", "Rua das Flores, 123, Centro", "(55) 99999-8888");
+          stmt.run("João Pereira", "987.654.321-00", "09876543210", "1990-02-15", "Av. Principal, 456, Bairro Norte", "(55) 98888-7777");
+          stmt.finalize(() => {
+            // Apenas depois de inserir beneficiários, insere agendamentos que dependem deles
+            db.get("SELECT count(*) as count FROM appointments", (err, row) => {
+                if (err) { console.error("Erro ao verificar agendamentos:", err.message); return; }
+                if(row && row.count === 0) {
+                    const stmt = db.prepare("INSERT INTO appointments (beneficiary_id, server_id, title, description, priority, status) VALUES (?, ?, ?, ?, ?, ?)");
+                    stmt.run(1, null, "Atualização CadÚnico", "Beneficiária precisa atualizar o endereço e a renda familiar.", "Alta", "Pendente");
+                    stmt.run(2, null, "Solicitação de Cesta Básica", "Beneficiário desempregado, primeira vez solicitando.", "Média", "Pendente");
+                    stmt.run(1, null, "Inscrição SCFV", "Inscrever filho de 8 anos no Serviço de Convivência.", "Baixa", "Realizado");
+                    stmt.finalize();
+                    console.log('Dados de exemplo inseridos na tabela appointments.');
+                }
+            });
+          });
+          console.log('Dados de exemplo inseridos na tabela beneficiaries.');
+      }
+  });
+
+  db.get("SELECT count(*) as count FROM news", (err, row) => {
+      if (err) { console.error("Erro ao verificar notícias:", err.message); return; }
+      if(row && row.count === 0) {
+          const stmt = db.prepare("INSERT INTO news (title, content, author) VALUES (?, ?, ?)");
+          stmt.run("Campanha do Agasalho 2025", "A Secretaria de Assistência Social lança a Campanha do Agasalho 2025. Doe roupas e cobertores em bom estado nos pontos de coleta.", "Prefeitura de Caçapava do Sul");
+          stmt.run("Abertura de Inscrições para Cursos", "Estão abertas as inscrições para cursos profissionalizantes gratuitos. Mais informações no CRAS.", "Secretaria de Assistência Social");
+          stmt.finalize();
+          console.log('Dados de exemplo inseridos na tabela news.');
+      }
+  });
+
+  db.get("SELECT count(*) as count FROM programs", (err, row) => {
+      if (err) { console.error("Erro ao verificar programas:", err.message); return; }
+      if(row && row.count === 0) {
+          const stmt = db.prepare("INSERT INTO programs (name) VALUES (?)");
+          stmt.run("Programa Criança Feliz");
+          stmt.run("Bolsa Família");
+          stmt.run("Auxílio Gás");
+          stmt.run("Serviço de Convivência e Fortalecimento de Vínculos");
+          stmt.finalize();
+          console.log('Dados de exemplo inseridos na tabela programs.');
+      }
+  });
+});
 
 
-// Rota para obter todos os beneficiários com busca
+// --- ROTAS DE BENEFICIÁRIOS ---
 app.get('/api/beneficiaries', (req, res) => {
   const { search } = req.query;
   let sql = "SELECT * FROM beneficiaries";
@@ -87,259 +140,138 @@ app.get('/api/beneficiaries', (req, res) => {
       res.status(400).json({ "error": err.message });
       return;
     }
-    res.json({
-      "message": "success",
-      "data": rows
-    });
+    res.json({ "message": "success", "data": rows });
   });
 });
 
-// Rota para obter um único beneficiário
 app.get('/api/beneficiaries/:id', (req, res) => {
   const { id } = req.params;
   const sql = "SELECT * FROM beneficiaries WHERE id = ?";
   db.get(sql, [id], (err, row) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    if (row) {
-      res.json({ "message": "success", "data": row });
-    } else {
-      res.status(404).json({ "message": "Beneficiário não encontrado." });
-    }
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    if (row) { res.json({ "message": "success", "data": row }); } 
+    else { res.status(404).json({ "message": "Beneficiário não encontrado." }); }
   });
 });
 
-// Rota para criar um novo beneficiário
 app.post('/api/beneficiaries', (req, res) => {
   const { name, cpf, nis, birthDate, address, phone } = req.body;
   const sql = `INSERT INTO beneficiaries (name, cpf, nis, birthDate, address, phone) VALUES (?, ?, ?, ?, ?, ?)`;
   const params = [name, cpf, nis, birthDate, address, phone];
   db.run(sql, params, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.status(201).json({
-      "message": "success",
-      "data": { id: this.lastID, ...req.body }
-    });
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.status(201).json({ "message": "success", "data": { id: this.lastID, ...req.body } });
   });
 });
 
-// Rota para atualizar um beneficiário
 app.put('/api/beneficiaries/:id', (req, res) => {
   const { id } = req.params;
   const { name, cpf, nis, birthDate, address, phone } = req.body;
-  const sql = `UPDATE beneficiaries SET 
-    name = ?, 
-    cpf = ?, 
-    nis = ?, 
-    birthDate = ?, 
-    address = ?, 
-    phone = ? 
-    WHERE id = ?`;
+  const sql = `UPDATE beneficiaries SET name = ?, cpf = ?, nis = ?, birthDate = ?, address = ?, phone = ? WHERE id = ?`;
   const params = [name, cpf, nis, birthDate, address, phone, id];
   db.run(sql, params, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.json({
-      "message": "success",
-      "data": { id, ...req.body },
-      "changes": this.changes
-    });
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.json({ "message": "success", "data": { id, ...req.body }, "changes": this.changes });
   });
 });
 
-// Rota para deletar um beneficiário
 app.delete('/api/beneficiaries/:id', (req, res) => {
   const { id } = req.params;
   const sql = 'DELETE FROM beneficiaries WHERE id = ?';
   db.run(sql, id, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
+    if (err) { res.status(400).json({ "error": err.message }); return; }
     res.json({ "message": "deleted", "changes": this.changes });
   });
 });
 
 
 // --- ROTAS DE PROGRAMAS ---
-
-// Rota para obter todos os programas
 app.get('/api/programs', (req, res) => {
   const sql = "SELECT * FROM programs ORDER BY name";
   db.all(sql, [], (err, rows) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.json({
-      "message": "success",
-      "data": rows
-    });
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.json({ "message": "success", "data": rows });
   });
 });
 
-// Rota para criar um novo programa
 app.post('/api/programs', (req, res) => {
   const { name } = req.body;
-  if (!name) {
-    return res.status(400).json({ "error": "O nome do programa é obrigatório." });
-  }
+  if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
   const sql = `INSERT INTO programs (name) VALUES (?)`;
   db.run(sql, [name], function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.status(201).json({
-      "message": "success",
-      "data": { id: this.lastID, name }
-    });
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.status(201).json({ "message": "success", "data": { id: this.lastID, name } });
   });
 });
 
-// Rota para atualizar um programa
 app.put('/api/programs/:id', (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
-  if (!name) {
-    return res.status(400).json({ "error": "O nome do programa é obrigatório." });
-  }
+  if (!name) { return res.status(400).json({ "error": "O nome do programa é obrigatório." }); }
   const sql = `UPDATE programs SET name = ? WHERE id = ?`;
   db.run(sql, [name, id], function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.json({
-      "message": "success",
-      "data": { id, name },
-      "changes": this.changes
-    });
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.json({ "message": "success", "data": { id, name }, "changes": this.changes });
   });
 });
 
-// Rota para deletar um programa
 app.delete('/api/programs/:id', (req, res) => {
   const { id } = req.params;
-  // Também remove associações ao deletar um programa
   db.run('DELETE FROM beneficiary_programs WHERE program_id = ?', id, (err) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
+    if (err) { res.status(400).json({ "error": err.message }); return; }
     const sql = 'DELETE FROM programs WHERE id = ?';
     db.run(sql, id, function(err) {
-      if (err) {
-        res.status(400).json({ "error": err.message });
-        return;
-      }
+      if (err) { res.status(400).json({ "error": err.message }); return; }
       res.json({ "message": "deleted", "changes": this.changes });
     });
   });
 });
 
 
-// --- ROTAS DE NOTÍCIAS ---
-
-// Rota para obter todas as notícias
-app.get('/api/news', (req, res) => {
-  const sql = "SELECT * FROM news ORDER BY createdAt DESC";
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.json({
-      "message": "success",
-      "data": rows
-    });
-  });
-});
-
-// Rota para obter uma única notícia
-app.get('/api/news/:id', (req, res) => {
+// --- ROTAS DE ASSOCIAÇÃO BENEFICIÁRIO-PROGRAMA ---
+app.get('/api/beneficiaries/:id/programs', (req, res) => {
   const { id } = req.params;
-  const sql = "SELECT * FROM news WHERE id = ?";
-  db.get(sql, [id], (err, row) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    if (row) {
-      res.json({ "message": "success", "data": row });
-    } else {
-      res.status(404).json({ "message": "Notícia não encontrada." });
-    }
+  const sql = `SELECT p.id, p.name FROM programs p JOIN beneficiary_programs bp ON p.id = bp.program_id WHERE bp.beneficiary_id = ?`;
+  db.all(sql, [id], (err, rows) => {
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.json({ "message": "success", "data": rows });
   });
 });
 
-// Rota para criar uma nova notícia
-app.post('/api/news', (req, res) => {
-  const { title, content, author } = req.body;
-  const sql = `INSERT INTO news (title, content, author) VALUES (?, ?, ?)`;
-  const params = [title, content, author];
-  db.run(sql, params, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.status(201).json({
-      "message": "success",
-      "data": { id: this.lastID, ...req.body }
-    });
+app.post('/api/beneficiaries/:id/programs', (req, res) => {
+  const { id: beneficiary_id } = req.params;
+  const { program_id } = req.body;
+  const sql = `INSERT INTO beneficiary_programs (beneficiary_id, program_id) VALUES (?, ?)`;
+  db.run(sql, [beneficiary_id, program_id], function(err) {
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.status(201).json({ "message": "success" });
   });
 });
 
-// Rota para atualizar uma notícia
-app.put('/api/news/:id', (req, res) => {
-  const { id } = req.params;
-  const { title, content, author } = req.body;
-  const sql = `UPDATE news SET title = ?, content = ?, author = ? WHERE id = ?`;
-  const params = [title, content, author, id];
-  db.run(sql, params, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.json({
-      "message": "success",
-      "data": { id, ...req.body },
-      "changes": this.changes
-    });
-  });
-});
-
-// Rota para deletar uma notícia
-app.delete('/api/news/:id', (req, res) => {
-  const { id } = req.params;
-  const sql = 'DELETE FROM news WHERE id = ?';
-  db.run(sql, id, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
+app.delete('/api/beneficiaries/:beneficiary_id/programs/:program_id', (req, res) => {
+  const { beneficiary_id, program_id } = req.params;
+  const sql = 'DELETE FROM beneficiary_programs WHERE beneficiary_id = ? AND program_id = ?';
+  db.run(sql, [beneficiary_id, program_id], function(err) {
+    if (err) { res.status(400).json({ "error": err.message }); return; }
     res.json({ "message": "deleted", "changes": this.changes });
   });
 });
 
 
-// --- ROTAS DE AGENDAMENTOS ---
+// --- ROTAS DE NOTÍCIAS ---
+app.get('/api/news', (req, res) => {
+  const sql = "SELECT * FROM news ORDER BY createdAt DESC";
+  db.all(sql, [], (err, rows) => {
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.json({ "message": "success", "data": rows });
+  });
+});
 
-// Rota para obter todos os agendamentos (pode ser filtrado por servidor ou beneficiário)
+// --- ROTAS DE AGENDAMENTOS ---
 app.get('/api/appointments', (req, res) => {
   const { server_id, beneficiary_id } = req.query;
   let sql = `
-    SELECT 
-      a.id, a.date, a.time, a.reason, a.status,
-      b.name as beneficiary_name,
-      b.id as beneficiary_id
+    SELECT a.id, a.title, a.description, a.priority, a.status, a.createdAt, b.name as beneficiary_name, b.id as beneficiary_id
     FROM appointments a
     JOIN beneficiaries b ON a.beneficiary_id = b.id
   `;
@@ -353,66 +285,76 @@ app.get('/api/appointments', (req, res) => {
     params.push(beneficiary_id);
   }
   
-  sql += ' ORDER BY a.date, a.time';
+  sql += ' ORDER BY a.createdAt DESC';
 
   db.all(sql, params, (err, rows) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
+    if (err) { res.status(400).json({ "error": err.message }); return; }
     res.json({ "message": "success", "data": rows });
   });
 });
 
-// Rota para criar um novo agendamento
+app.get('/api/beneficiaries/:id/appointments', (req, res) => {
+  const { id } = req.params;
+  const sql = `SELECT a.id, a.title, a.description, a.priority, a.status, a.createdAt FROM appointments a WHERE a.beneficiary_id = ? ORDER BY a.createdAt DESC`;
+  db.all(sql, [id], (err, rows) => {
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    res.json({ "message": "success", "data": rows });
+  });
+});
+
 app.post('/api/appointments', (req, res) => {
-  const { beneficiary_id, server_id, date, time, reason } = req.body;
-  const sql = `INSERT INTO appointments (beneficiary_id, server_id, date, time, reason) VALUES (?, ?, ?, ?, ?)`;
-  const params = [beneficiary_id, server_id, date, time, reason];
+  const { beneficiary_id, server_id, title, description, priority } = req.body;
+  const sql = `INSERT INTO appointments (beneficiary_id, server_id, title, description, priority) VALUES (?, ?, ?, ?, ?)`;
+  const params = [beneficiary_id, server_id, title, description, priority];
   db.run(sql, params, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.status(201).json({
-      "message": "success",
-      "data": { id: this.lastID, ...req.body }
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    const newAppointmentId = this.lastID;
+    db.get("SELECT * FROM appointments WHERE id = ?", [newAppointmentId], (err, row) => {
+        if (err) { res.status(400).json({ "error": err.message }); return; }
+        res.status(201).json({ "message": "success", "data": row });
     });
   });
 });
 
-// Rota para atualizar o status de um agendamento
 app.put('/api/appointments/:id', (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
-  const sql = `UPDATE appointments SET status = ? WHERE id = ?`;
-  const params = [status, id];
+  const { title, description, priority, status } = req.body;
+  const fields = [], params = [];
+  
+  if (title !== undefined) { fields.push("title = ?"); params.push(title); }
+  if (description !== undefined) { fields.push("description = ?"); params.push(description); }
+  if (priority !== undefined) { fields.push("priority = ?"); params.push(priority); }
+  if (status !== undefined) { fields.push("status = ?"); params.push(status); }
+
+  if (fields.length === 0) { return res.status(400).json({ "error": "Nenhum campo para atualizar fornecido." }); }
+  params.push(id);
+
+  const sql = `UPDATE appointments SET ${fields.join(', ')} WHERE id = ?`;
   db.run(sql, params, function(err) {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    res.json({
-      "message": "success",
-      "changes": this.changes
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    db.get("SELECT * FROM appointments WHERE id = ?", [id], (err, row) => {
+        if (err) { res.status(400).json({ "error": err.message }); return; }
+        res.json({ "message": "success", "data": row, "changes": this.changes });
     });
   });
+});
+
+app.delete('/api/appointments/:id', (req, res) => {
+    const { id } = req.params;
+    const sql = 'DELETE FROM appointments WHERE id = ?';
+    db.run(sql, id, function(err) {
+        if (err) { res.status(400).json({ "error": err.message }); return; }
+        res.json({ "message": "deleted", "changes": this.changes });
+    });
 });
 
 // --- ROTAS DE RELATÓRIOS ---
-
-// Rota para obter estatísticas gerais
 app.get('/api/reports/stats', (req, res) => {
   const queries = {
     totalBeneficiaries: "SELECT COUNT(*) as count FROM beneficiaries",
     totalAppointments: "SELECT COUNT(*) as count FROM appointments",
     appointmentsByStatus: "SELECT status, COUNT(*) as count FROM appointments GROUP BY status",
-    beneficiariesByProgram: `
-      SELECT p.name, COUNT(bp.beneficiary_id) as count 
-      FROM programs p
-      LEFT JOIN beneficiary_programs bp ON p.id = bp.program_id
-      GROUP BY p.name
-    `
+    beneficiariesByProgram: `SELECT p.name, COUNT(bp.beneficiary_id) as count FROM programs p LEFT JOIN beneficiary_programs bp ON p.id = bp.program_id GROUP BY p.name`
   };
 
   const results = {};
@@ -422,102 +364,31 @@ app.get('/api/reports/stats', (req, res) => {
   Object.entries(queries).forEach(([key, sql]) => {
     db.all(sql, [], (err, rows) => {
       if (err) {
-        // Se uma query falhar, retorna erro
-        if (!res.headersSent) {
-          res.status(500).json({ "error": `Failed to fetch ${key}: ${err.message}` });
-        }
+        if (!res.headersSent) { res.status(500).json({ "error": `Failed to fetch ${key}: ${err.message}` }); }
         return;
       }
-      
-      // Processa os resultados
-      if (key === 'totalBeneficiaries' || key === 'totalAppointments') {
-        results[key] = rows[0].count;
-      } else {
-        results[key] = rows;
-      }
+      if (key === 'totalBeneficiaries' || key === 'totalAppointments') { results[key] = rows[0].count; } 
+      else { results[key] = rows; }
       
       completedQueries++;
-      if (completedQueries === totalQueries) {
-        res.json({ "message": "success", "data": results });
-      }
+      if (completedQueries === totalQueries) { res.json({ "message": "success", "data": results }); }
     });
   });
 });
 
-
-// Rota para buscar um CPF na base de dados local do CadÚnico
+// --- ROTAS DE CADÚNICO ---
 app.get('/api/cadunico/search', (req, res) => {
   const { cpf } = req.query;
-
-  if (!cpf) {
-    return res.status(400).json({ "error": "CPF é obrigatório" });
-  }
-
+  if (!cpf) { return res.status(400).json({ "error": "CPF é obrigatório" }); }
   const sql = "SELECT * FROM cadunico_data WHERE cpf = ?";
   db.get(sql, [cpf], (err, row) => {
-    if (err) {
-      res.status(400).json({ "error": err.message });
-      return;
-    }
-    if (row) {
-      res.json({
-        "message": "success",
-        "data": row
-      });
-    } else {
-      res.status(404).json({ "message": "CPF não encontrado na base de dados local do CadÚnico." });
-    }
+    if (err) { res.status(400).json({ "error": err.message }); return; }
+    if (row) { res.json({ "message": "success", "data": row }); } 
+    else { res.status(404).json({ "message": "CPF não encontrado na base de dados local do CadÚnico." }); }
   });
 });
 
 // Inicia o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
-});
-
-// Adiciona alguns dados de exemplo se o banco estiver vazio
-db.get("SELECT count(*) as count FROM beneficiaries", (err, row) => {
-    if(row.count === 0) {
-        const stmt = db.prepare("INSERT INTO beneficiaries (name, cpf, nis, birthDate, address, phone) VALUES (?, ?, ?, ?, ?, ?)");
-        stmt.run("Maria da Silva", "123.456.789-00", "12345678901", "1985-05-20", "Rua das Flores, 123, Centro", "(55) 99999-8888");
-        stmt.run("João Pereira", "987.654.321-00", "09876543210", "1990-02-15", "Av. Principal, 456, Bairro Norte", "(55) 98888-7777");
-        stmt.finalize();
-        console.log('Dados de exemplo inseridos na tabela beneficiaries.');
-    }
-});
-
-// Adiciona algumas notícias de exemplo se o banco estiver vazio
-db.get("SELECT count(*) as count FROM news", (err, row) => {
-    if(row.count === 0) {
-        const stmt = db.prepare("INSERT INTO news (title, content, author) VALUES (?, ?, ?)");
-        stmt.run("Campanha do Agasalho 2025", "A Secretaria de Assistência Social lança a Campanha do Agasalho 2025. Doe roupas e cobertores em bom estado nos pontos de coleta.", "Secretaria de Assistência Social");
-        stmt.run("Abertura de Inscrições para Cursos", "Estão abertas as inscrições para cursos profissionalizantes gratuitos. Mais informações no CRAS.", "Secretaria de Assistência Social");
-        stmt.finalize();
-        console.log('Dados de exemplo inseridos na tabela news.');
-    }
-});
-
-// Adiciona alguns agendamentos de exemplo se o banco estiver vazio
-db.get("SELECT count(*) as count FROM appointments", (err, row) => {
-    if(row.count === 0) {
-        const stmt = db.prepare("INSERT INTO appointments (beneficiary_id, server_id, date, time, reason, status) VALUES (?, ?, ?, ?, ?, ?)");
-        // Note: server_id is nullable for now, assuming any server can handle.
-        stmt.run(1, null, "2025-08-25", "10:00", "Atualização do Cadastro Único", "Agendado");
-        stmt.run(2, null, "2025-08-26", "14:30", "Solicitação de cesta básica", "Agendado");
-        stmt.finalize();
-        console.log('Dados de exemplo inseridos na tabela appointments.');
-    }
-});
-
-// Adiciona alguns programas de exemplo se o banco estiver vazio
-db.get("SELECT count(*) as count FROM programs", (err, row) => {
-    if(row.count === 0) {
-        const stmt = db.prepare("INSERT INTO programs (name) VALUES (?)");
-        stmt.run("Programa Criança Feliz");
-        stmt.run("Bolsa Família");
-        stmt.run("Auxílio Gás");
-        stmt.run("Serviço de Convivência e Fortalecimento de Vínculos");
-        stmt.finalize();
-        console.log('Dados de exemplo inseridos na tabela programs.');
-    }
 });

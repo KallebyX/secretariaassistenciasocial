@@ -1,27 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-
-// Mock data - substitua pela chamada da API
-const beneficiaries = [
-  { id: 1, name: 'Maria da Silva', cpf: '123.456.789-00', nis: '12345678901', program: 'Bolsa Família' },
-  { id: 2, name: 'João Pereira', cpf: '987.654.321-00', nis: '09876543210', program: 'Criança Feliz' },
-  { id: 3, name: 'Ana Costa', cpf: '111.222.333-44', nis: '11223344556', program: 'Bolsa Família' },
-];
+import { api } from '../../services/api';
+import { Beneficiary } from '../../types';
+import { useToast } from '../../context/ToastContext';
 
 const BeneficiaryListPage: React.FC = () => {
+  const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { addToast } = useToast();
+
+  const fetchBeneficiaries = useCallback(async (search: string) => {
+    try {
+      setLoading(true);
+      const response = await api.get('/beneficiaries', {
+        params: { search },
+      });
+      setBeneficiaries(response.data.data);
+    } catch (error) {
+      addToast('Erro ao buscar beneficiários.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchBeneficiaries(searchTerm);
+    }, 500); // Atraso de 500ms para debounce
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, fetchBeneficiaries]);
+
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md">
+    <div className="bg-white p-8 rounded-lg shadow-md animate-slide-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Gestão de Beneficiários</h1>
-        <Link to="/admin/beneficiaries/new" className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg">
+        {/* O botão para novo beneficiário pode ser implementado no futuro */}
+        {/* <Link to="/admin/beneficiaries/new" className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg">
           Novo Beneficiário
-        </Link>
+        </Link> */}
       </div>
       
       <div className="mb-4">
         <input 
           type="text" 
-          placeholder="Buscar por nome, CPF ou NIS..."
+          placeholder="Buscar por nome ou CPF..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-prefeitura-amarelo"
         />
       </div>
@@ -33,24 +59,32 @@ const BeneficiaryListPage: React.FC = () => {
               <th className="py-3 px-4 text-left text-gray-600 font-semibold">Nome</th>
               <th className="py-3 px-4 text-left text-gray-600 font-semibold">CPF</th>
               <th className="py-3 px-4 text-left text-gray-600 font-semibold">NIS</th>
-              <th className="py-3 px-4 text-left text-gray-600 font-semibold">Programa Principal</th>
               <th className="py-3 px-4 text-left text-gray-600 font-semibold">Ações</th>
             </tr>
           </thead>
           <tbody>
-            {beneficiaries.map((beneficiary) => (
-              <tr key={beneficiary.id} className="border-b hover:bg-gray-50">
-                <td className="py-3 px-4">{beneficiary.name}</td>
-                <td className="py-3 px-4">{beneficiary.cpf}</td>
-                <td className="py-3 px-4">{beneficiary.nis}</td>
-                <td className="py-3 px-4">{beneficiary.program}</td>
-                <td className="py-3 px-4">
-                  <Link to={`/admin/beneficiaries/${beneficiary.id}`} className="text-prefeitura-verde hover:underline">
-                    Ver Perfil
-                  </Link>
-                </td>
+            {loading ? (
+              <tr>
+                <td colSpan={4} className="text-center py-4">Carregando...</td>
               </tr>
-            ))}
+            ) : beneficiaries.length > 0 ? (
+              beneficiaries.map((beneficiary) => (
+                <tr key={beneficiary.id} className="border-b hover:bg-gray-50">
+                  <td className="py-3 px-4">{beneficiary.name}</td>
+                  <td className="py-3 px-4">{beneficiary.cpf}</td>
+                  <td className="py-3 px-4">{beneficiary.nis || 'N/A'}</td>
+                  <td className="py-3 px-4">
+                    <Link to={`/admin/beneficiaries/${beneficiary.id}`} className="text-prefeitura-verde hover:underline">
+                      Ver Perfil
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} className="text-center py-4">Nenhum beneficiário encontrado.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
