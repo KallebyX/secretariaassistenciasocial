@@ -11,7 +11,6 @@ import HomePage from './pages/HomePage';
 import RegisterPage from './pages/RegisterPage';
 import BeneficiaryListPage from './pages/admin/BeneficiaryListPage';
 import BeneficiaryProfilePage from './pages/admin/BeneficiaryProfilePage';
-import BeneficiaryFormPage from './pages/admin/BeneficiaryFormPage';
 import ProgramManagementPage from './pages/admin/ProgramManagementPage';
 
 const AppRoutes: React.FC = () => {
@@ -51,8 +50,6 @@ const AppRoutes: React.FC = () => {
                     <Route path="/secretary" element={<SecretaryDashboardPage />} />
                     <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
                     <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
-                    <Route path="/admin/beneficiaries/new" element={<BeneficiaryFormPage />} />
-                    <Route path="/admin/beneficiaries/:id/edit" element={<BeneficiaryFormPage />} />
                     <Route path="/admin/programs" element={<ProgramManagementPage />} />
                     <Route path="/" element={<Navigate to="/secretary" />} />
                   </>
