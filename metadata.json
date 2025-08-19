@@ -1,0 +1,5 @@
+{
+  "name": "Social Assistance Management System",
+  "description": "A gamified platform for beneficiaries of municipal social assistance. This system includes an internal module for social workers to manage tasks and families, and an external portal for citizens to access courses, job opportunities, and a community forum, all while earning points and achievements.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assistência Social - Caçapava do Sul</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              'brand-primary': {
+                '50': '#eef7ff',
+                '100': '#d9eeff',
+                '200': '#bce3ff',
+                '300': '#92d4ff',
+                '400': '#62baff',
+                '500': '#3e9cff',
+                '600': '#227eff',
+                '700': '#1967ff',
+                '800': '#1852d8',
+                '900': '#1945ab', // Main Blue
+              },
+              'brand-secondary': { // Yellow
+                '200': '#fef08a',
+                '300': '#fde047',
+                '400': '#facc15',
+                '500': '#eab308',
+              },
+              'brand-accent': { // Green
+                '100': '#dcfce7',
+                '400': '#4ade80',
+                '500': '#22c55e',
+                '600': '#16a34a',
+              }
+            },
+            animation: {
+              'slide-in': 'slide-in 0.5s ease-out forwards',
+              'fade-out': 'fade-out 0.5s ease-in forwards',
+              'bar-grow': 'bar-grow 0.7s ease-out forwards'
+            },
+            keyframes: {
+              'slide-in': {
+                '0%': { transform: 'translateY(-20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              'fade-out': {
+                '0%': { opacity: '1' },
+                '100%': { opacity: '0' },
+              },
+              'bar-grow': {
+                '0%': { width: '0%' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.22.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
+    "react/": "https://esm.sh/react@^19.1.1/"
+  }
+}
+</script>
+</head>
+  <body class="bg-gray-50 text-gray-800">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
