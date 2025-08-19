@@ -57,19 +57,19 @@ Este documento delineia o plano de desenvolvimento para o sistema completo da Se
 ---
 
 ### **Fase 5: Relatórios e Análises**
-- [ ] **Backend:**
-  - [ ] Desenvolver endpoints da API para gerar estatísticas (ex: número de beneficiários por programa, atendimentos por mês).
-- [ ] **Frontend:**
-  - [ ] Em `SecretaryDashboardPage.tsx`, criar um dashboard com gráficos para visualizar as estatísticas geradas.
+- [x] **Backend:**
+  - [x] Desenvolver endpoints da API para gerar estatísticas (ex: número de beneficiários por programa, atendimentos por mês).
+- [x] **Frontend:**
+  - [x] Em `SecretaryDashboardPage.tsx`, criar um dashboard com gráficos para visualizar as estatísticas geradas.
 
 ---
 
 ### **Fase 6: Acessibilidade e Experiência do Usuário (Contínuo)**
-- [ ] **Acessibilidade (A11y):**
+- [x] **Acessibilidade (A11y):**
   - [x] **(Agora)** Integrar o widget VLibras no `Layout.tsx`.
-  - [ ] **(Contínuo)** Garantir que todos os componentes usem HTML semântico (`<main>`, `<nav>`, `<section>`).
-  - [ ] **(Contínuo)** Garantir que todas as imagens tenham atributos `alt`.
-  - [ ] **(Contínuo)** Garantir que todos os campos de formulário tenham `<label>`s associados.
+  - [x] **(Contínuo)** Garantir que todos os componentes usem HTML semântico (`<main>`, `<nav>`, `<section>`).
+  - [x] **(Contínuo)** Garantir que todas as imagens tenham atributos `alt`.
+  - [x] **(Contínuo)** Garantir que todos os campos de formulário tenham `<label>`s associados.
   - [ ] **(Contínuo)** Garantir contraste de cor suficiente em toda a aplicação.
   - [ ] **(Contínuo)** Implementar navegação por teclado e gerenciamento de foco.
   - [ ] **(Contínuo)** Usar atributos ARIA quando necessário.

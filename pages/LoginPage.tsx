@@ -38,9 +38,12 @@ const LoginPage: React.FC = () => {
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">CPF</label>
+            <label htmlFor="cpf" className="block text-sm font-medium text-gray-700">CPF</label>
             <input 
+              id="cpf"
+              name="cpf"
               type="text" 
+              autoComplete="username"
               value={cpf} 
               onChange={e => setCpf(e.target.value.replace(/\D/g, ''))}
               className="mt-1 block w-full border border-gray-300 px-3 py-2 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary-500 focus:border-brand-primary-500 sm:text-sm" 
@@ -50,9 +53,12 @@ const LoginPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Senha</label>
+            <label htmlFor="senha" className="block text-sm font-medium text-gray-700">Senha</label>
             <input 
+              id="senha"
+              name="senha"
               type="password" 
+              autoComplete="current-password"
               value={senha} 
               onChange={e => setSenha(e.target.value)}
               className="mt-1 block w-full border border-gray-300 px-3 py-2 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-brand-primary-500 focus:border-brand-primary-500 sm:text-sm" 

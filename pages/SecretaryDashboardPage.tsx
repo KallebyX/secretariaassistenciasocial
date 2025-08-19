@@ -82,6 +82,9 @@ const SecretaryDashboardPage: React.FC = () => {
                     <Link to="/admin/programs" className="bg-prefeitura-amarelo hover:opacity-90 text-gray-800 font-bold py-2 px-4 rounded-lg">
                         Gerenciar Programas
                     </Link>
+                    <Link to="/admin/reports" className="bg-prefeitura-azul hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg">
+                        Ver Relatórios
+                    </Link>
                  </div>
             </div>
             

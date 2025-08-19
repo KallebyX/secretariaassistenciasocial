@@ -168,6 +168,84 @@ app.delete('/api/beneficiaries/:id', (req, res) => {
 });
 
 
+// --- ROTAS DE PROGRAMAS ---
+
+// Rota para obter todos os programas
+app.get('/api/programs', (req, res) => {
+  const sql = "SELECT * FROM programs ORDER BY name";
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      res.status(400).json({ "error": err.message });
+      return;
+    }
+    res.json({
+      "message": "success",
+      "data": rows
+    });
+  });
+});
+
+// Rota para criar um novo programa
+app.post('/api/programs', (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ "error": "O nome do programa é obrigatório." });
+  }
+  const sql = `INSERT INTO programs (name) VALUES (?)`;
+  db.run(sql, [name], function(err) {
+    if (err) {
+      res.status(400).json({ "error": err.message });
+      return;
+    }
+    res.status(201).json({
+      "message": "success",
+      "data": { id: this.lastID, name }
+    });
+  });
+});
+
+// Rota para atualizar um programa
+app.put('/api/programs/:id', (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ "error": "O nome do programa é obrigatório." });
+  }
+  const sql = `UPDATE programs SET name = ? WHERE id = ?`;
+  db.run(sql, [name, id], function(err) {
+    if (err) {
+      res.status(400).json({ "error": err.message });
+      return;
+    }
+    res.json({
+      "message": "success",
+      "data": { id, name },
+      "changes": this.changes
+    });
+  });
+});
+
+// Rota para deletar um programa
+app.delete('/api/programs/:id', (req, res) => {
+  const { id } = req.params;
+  // Também remove associações ao deletar um programa
+  db.run('DELETE FROM beneficiary_programs WHERE program_id = ?', id, (err) => {
+    if (err) {
+      res.status(400).json({ "error": err.message });
+      return;
+    }
+    const sql = 'DELETE FROM programs WHERE id = ?';
+    db.run(sql, id, function(err) {
+      if (err) {
+        res.status(400).json({ "error": err.message });
+        return;
+      }
+      res.json({ "message": "deleted", "changes": this.changes });
+    });
+  });
+});
+
+
 // --- ROTAS DE NOTÍCIAS ---
 
 // Rota para obter todas as notícias
@@ -321,6 +399,52 @@ app.put('/api/appointments/:id', (req, res) => {
   });
 });
 
+// --- ROTAS DE RELATÓRIOS ---
+
+// Rota para obter estatísticas gerais
+app.get('/api/reports/stats', (req, res) => {
+  const queries = {
+    totalBeneficiaries: "SELECT COUNT(*) as count FROM beneficiaries",
+    totalAppointments: "SELECT COUNT(*) as count FROM appointments",
+    appointmentsByStatus: "SELECT status, COUNT(*) as count FROM appointments GROUP BY status",
+    beneficiariesByProgram: `
+      SELECT p.name, COUNT(bp.beneficiary_id) as count 
+      FROM programs p
+      LEFT JOIN beneficiary_programs bp ON p.id = bp.program_id
+      GROUP BY p.name
+    `
+  };
+
+  const results = {};
+  let completedQueries = 0;
+  const totalQueries = Object.keys(queries).length;
+
+  Object.entries(queries).forEach(([key, sql]) => {
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        // Se uma query falhar, retorna erro
+        if (!res.headersSent) {
+          res.status(500).json({ "error": `Failed to fetch ${key}: ${err.message}` });
+        }
+        return;
+      }
+      
+      // Processa os resultados
+      if (key === 'totalBeneficiaries' || key === 'totalAppointments') {
+        results[key] = rows[0].count;
+      } else {
+        results[key] = rows;
+      }
+      
+      completedQueries++;
+      if (completedQueries === totalQueries) {
+        res.json({ "message": "success", "data": results });
+      }
+    });
+  });
+});
+
+
 // Rota para buscar um CPF na base de dados local do CadÚnico
 app.get('/api/cadunico/search', (req, res) => {
   const { cpf } = req.query;
@@ -382,5 +506,18 @@ db.get("SELECT count(*) as count FROM appointments", (err, row) => {
         stmt.run(2, null, "2025-08-26", "14:30", "Solicitação de cesta básica", "Agendado");
         stmt.finalize();
         console.log('Dados de exemplo inseridos na tabela appointments.');
+    }
+});
+
+// Adiciona alguns programas de exemplo se o banco estiver vazio
+db.get("SELECT count(*) as count FROM programs", (err, row) => {
+    if(row.count === 0) {
+        const stmt = db.prepare("INSERT INTO programs (name) VALUES (?)");
+        stmt.run("Programa Criança Feliz");
+        stmt.run("Bolsa Família");
+        stmt.run("Auxílio Gás");
+        stmt.run("Serviço de Convivência e Fortalecimento de Vínculos");
+        stmt.finalize();
+        console.log('Dados de exemplo inseridos na tabela programs.');
     }
 });

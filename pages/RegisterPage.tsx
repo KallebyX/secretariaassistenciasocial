@@ -16,8 +16,10 @@ const RegisterPage: React.FC = () => {
               <input
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="name"
+                name="name"
                 type="text"
                 placeholder="Seu nome completo"
+                autoComplete="name"
               />
             </div>
             <div className="mb-4">
@@ -27,8 +29,10 @@ const RegisterPage: React.FC = () => {
               <input
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 id="email"
+                name="email"
                 type="email"
                 placeholder="seuemail@exemplo.com"
+                autoComplete="email"
               />
             </div>
             <div className="mb-6">
@@ -38,8 +42,10 @@ const RegisterPage: React.FC = () => {
               <input
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
                 id="password"
+                name="password"
                 type="password"
                 placeholder="******************"
+                autoComplete="new-password"
               />
             </div>
             <div className="flex items-center justify-between">

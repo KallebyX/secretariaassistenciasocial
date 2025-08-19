@@ -97,3 +97,8 @@ export interface Beneficiary {
   address?: string;
   phone?: string;
 }
+
+export interface Program {
+  id: number;
+  name: string;
+}

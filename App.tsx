@@ -15,6 +15,7 @@ import ProgramManagementPage from './pages/admin/ProgramManagementPage';
 import NewsPage from './pages/news/NewsPage';
 import SingleNewsPage from './pages/news/SingleNewsPage';
 import SchedulePage from './pages/schedule/SchedulePage';
+import ReportsPage from './pages/admin/ReportsPage';
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
@@ -57,6 +58,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
                     <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
                     <Route path="/admin/programs" element={<ProgramManagementPage />} />
+                    <Route path="/admin/reports" element={<ReportsPage />} />
                     <Route path="/news" element={<NewsPage />} />
                     <Route path="/news/:id" element={<SingleNewsPage />} />
                     <Route path="/schedule" element={<SchedulePage />} />
