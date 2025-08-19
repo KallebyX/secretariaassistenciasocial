@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { User, Task, Course, ForumPost, Job, Family, SecretaryStats } from '../types';
 
-const api = axios.create({
+export const api = axios.create({
   baseURL: 'http://localhost:3001/api',
 });
 
@@ -43,157 +43,157 @@ const api = axios.create({
 // ];
 
 
-// --- MOCK API FUNCTIONS ---
-const simulateNetworkDelay = <T,>(data: T): Promise<T> => {
-    return new Promise(resolve => setTimeout(() => resolve(JSON.parse(JSON.stringify(data))), 500));
-}
+// ... MOCK API FUNCTIONS ---
+// const simulateNetworkDelay = <T,>(data: T): Promise<T> => {
+//     return new Promise(resolve => setTimeout(() => resolve(JSON.parse(JSON.stringify(data))), 500));
+// }
 
-export const apiLogin = (cpf: string, senha: string): Promise<{ access_token: string, token_type: 'bearer' }> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            if (mockUsers[cpf] && senha === 'senha123') { // Simple password check
-                resolve({ access_token: `fake-jwt-for-${cpf}`, token_type: 'bearer' });
-            } else {
-                reject(new Error('CPF ou senha incorretos'));
-            }
-        }, 500);
-    });
-};
+// export const apiLogin = (cpf: string, senha: string): Promise<{ access_token: string, token_type: 'bearer' }> => {
+//     return new Promise((resolve, reject) => {
+//         setTimeout(() => {
+//             if (mockUsers[cpf] && senha === 'senha123') { // Simple password check
+//                 resolve({ access_token: `fake-jwt-for-${cpf}`, token_type: 'bearer' });
+//             } else {
+//                 reject(new Error('CPF ou senha incorretos'));
+//             }
+//         }, 500);
+//     });
+// };
 
-export const apiFetchProfile = (token: string): Promise<User> => {
-     return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const cpf = token.replace('fake-jwt-for-', '');
-            const user = mockUsers[cpf];
-            if (user) {
-                resolve(JSON.parse(JSON.stringify(user)));
-            } else {
-                reject(new Error('Usuário não encontrado'));
-            }
-        }, 200);
-    });
-}
+// export const apiFetchProfile = (token: string): Promise<User> => {
+//      return new Promise((resolve, reject) => {
+//         setTimeout(() => {
+//             const cpf = token.replace('fake-jwt-for-', '');
+//             const user = mockUsers[cpf];
+//             if (user) {
+//                 resolve(JSON.parse(JSON.stringify(user)));
+//             } else {
+//                 reject(new Error('Usuário não encontrado'));
+//             }
+//         }, 200);
+//     });
+// }
 
-export const apiFetchTasks = (token: string): Promise<Task[]> => {
-    return simulateNetworkDelay(mockTasks);
-};
+// export const apiFetchTasks = (token: string): Promise<Task[]> => {
+//     return simulateNetworkDelay(mockTasks);
+// };
 
-export const apiUpdateTaskStatus = (token: string, taskId: number, status: Task['status']): Promise<Task> => {
-    return new Promise((resolve, reject) => {
-        setTimeout(() => {
-            const taskIndex = mockTasks.findIndex(t => t.id === taskId);
-            if (taskIndex > -1) {
-                mockTasks[taskIndex].status = status;
-                resolve(JSON.parse(JSON.stringify(mockTasks[taskIndex])));
-            } else {
-                reject(new Error('Tarefa não encontrada'));
-            }
-        }, 300);
-    });
-}
+// export const apiUpdateTaskStatus = (token: string, taskId: number, status: Task['status']): Promise<Task> => {
+//     return new Promise((resolve, reject) => {
+//         setTimeout(() => {
+//             const taskIndex = mockTasks.findIndex(t => t.id === taskId);
+//             if (taskIndex > -1) {
+//                 mockTasks[taskIndex].status = status;
+//                 resolve(JSON.parse(JSON.stringify(mockTasks[taskIndex])));
+//             } else {
+//                 reject(new Error('Tarefa não encontrada'));
+//             }
+//         }, 300);
+//     });
+// }
 
-export const apiCreateTask = (token: string, taskData: Omit<Task, 'id' | 'servidor_id' | 'dataCriacao'>): Promise<Task> => {
-     return new Promise((resolve) => {
-        const newTask: Task = {
-            ...taskData,
-            id: Date.now(),
-            servidor_id: 1, // Mocked server ID
-            dataCriacao: new Date().toISOString().split('T')[0],
-        };
-        mockTasks.unshift(newTask);
-        setTimeout(() => resolve(newTask), 500);
-    });
-}
+// export const apiCreateTask = (token: string, taskData: Omit<Task, 'id' | 'servidor_id' | 'dataCriacao'>): Promise<Task> => {
+//      return new Promise((resolve) => {
+//         const newTask: Task = {
+//             ...taskData,
+//             id: Date.now(),
+//             servidor_id: 1, // Mocked server ID
+//             dataCriacao: new Date().toISOString().split('T')[0],
+//         };
+//         mockTasks.unshift(newTask);
+//         setTimeout(() => resolve(newTask), 500);
+//     });
+// }
 
 
-export const apiFetchCourses = (): Promise<Course[]> => {
-    return simulateNetworkDelay(mockCourses);
-};
+// export const apiFetchCourses = (): Promise<Course[]> => {
+//     return simulateNetworkDelay(mockCourses);
+// };
 
-export const apiEnrollCourse = (token: string, courseId: number): Promise<{ message: string }> => {
-    return new Promise((resolve, reject) => {
-       const cpf = token.replace('fake-jwt-for-', '');
-       const user = mockUsers[cpf];
-       if (user) {
-           if (!user.enrolledCourses.includes(courseId)) {
-               user.enrolledCourses.push(courseId);
-           }
-           resolve({ message: 'Inscrição realizada com sucesso!' });
-       } else {
-           reject(new Error('Usuário não encontrado'));
-       }
-    });
-}
+// export const apiEnrollCourse = (token: string, courseId: number): Promise<{ message: string }> => {
+//     return new Promise((resolve, reject) => {
+//        const cpf = token.replace('fake-jwt-for-', '');
+//        const user = mockUsers[cpf];
+//        if (user) {
+//            if (!user.enrolledCourses.includes(courseId)) {
+//                user.enrolledCourses.push(courseId);
+//            }
+//            resolve({ message: 'Inscrição realizada com sucesso!' });
+//        } else {
+//            reject(new Error('Usuário não encontrado'));
+//        }
+//     });
+// }
 
-export const apiFetchForumPosts = (): Promise<ForumPost[]> => {
-    return simulateNetworkDelay(mockForumPosts);
-};
+// export const apiFetchForumPosts = (): Promise<ForumPost[]> => {
+//     return simulateNetworkDelay(mockForumPosts);
+// };
 
-export const apiCreateForumPost = (token: string, titulo: string, conteudo: string): Promise<ForumPost> => {
-    return new Promise((resolve) => {
-        const cpf = token.replace('fake-jwt-for-', '');
-        const user = mockUsers[cpf];
-        const newPost: ForumPost = {
-            id: Date.now(),
-            titulo,
-            conteudo,
-            autor_nome: user.nome.split(' ')[0],
-            data: new Date().toISOString().split('T')[0],
-            respostas: 0,
-            curtidas: 0
-        };
-        mockForumPosts.unshift(newPost);
-        setTimeout(() => resolve(newPost), 500);
-    });
-}
+// export const apiCreateForumPost = (token: string, titulo: string, conteudo: string): Promise<ForumPost> => {
+//     return new Promise((resolve) => {
+//         const cpf = token.replace('fake-jwt-for-', '');
+//         const user = mockUsers[cpf];
+//         const newPost: ForumPost = {
+//             id: Date.now(),
+//             titulo,
+//             conteudo,
+//             autor_nome: user.nome.split(' ')[0],
+//             data: new Date().toISOString().split('T')[0],
+//             respostas: 0,
+//             curtidas: 0
+//         };
+//         mockForumPosts.unshift(newPost);
+//         setTimeout(() => resolve(newPost), 500);
+//     });
+// }
 
-export const apiFetchJobs = (): Promise<Job[]> => {
-    return simulateNetworkDelay(mockJobs);
-};
+// export const apiFetchJobs = (): Promise<Job[]> => {
+//     return simulateNetworkDelay(mockJobs);
+// };
 
-export const apiApplyForJob = (token: string, jobId: number): Promise<{ message: string }> => {
-    return new Promise((resolve, reject) => {
-       const cpf = token.replace('fake-jwt-for-', '');
-       const user = mockUsers[cpf];
-       if (user) {
-           if (!user.appliedJobs.includes(jobId)) {
-               user.appliedJobs.push(jobId);
-           }
-           resolve({ message: 'Candidatura enviada com sucesso!' });
-       } else {
-           reject(new Error('Usuário não encontrado'));
-       }
-    });
-};
+// export const apiApplyForJob = (token: string, jobId: number): Promise<{ message: string }> => {
+//     return new Promise((resolve, reject) => {
+//        const cpf = token.replace('fake-jwt-for-', '');
+//        const user = mockUsers[cpf];
+//        if (user) {
+//            if (!user.appliedJobs.includes(jobId)) {
+//                user.appliedJobs.push(jobId);
+//            }
+//            resolve({ message: 'Candidatura enviada com sucesso!' });
+//        } else {
+//            reject(new Error('Usuário não encontrado'));
+//        }
+//     });
+// };
 
-export const apiFetchFamilies = (token: string): Promise<Family[]> => {
-    return simulateNetworkDelay(mockFamilies);
-};
+// export const apiFetchFamilies = (token: string): Promise<Family[]> => {
+//     return simulateNetworkDelay(mockFamilies);
+// };
 
-export const apiFetchSecretaryStats = (token: string): Promise<SecretaryStats> => {
-    const stats: SecretaryStats = {
-        totalBeneficiarios: Object.values(mockUsers).filter(u => u.cargo === 'beneficiario').length,
-        totalFamilias: mockFamilies.length,
-        tarefasConcluidasMes: mockTasks.filter(t => t.status === 'Concluido').length, // Simplified
-        mediaEngajamentoCursos: 78,
-        tasksByStatus: [
-            { name: 'Pendente', value: mockTasks.filter(t => t.status === 'Pendente').length },
-            { name: 'Em Andamento', value: mockTasks.filter(t => t.status === 'Em Andamento').length },
-            { name: 'Concluído', value: mockTasks.filter(t => t.status === 'Concluido').length },
-        ],
-        coursesByCategory: [
-            { name: 'Tecnologia', value: 15 },
-            { name: 'Saúde', value: 25 },
-            { name: 'Negócios', value: 18 },
-        ],
-        recentActivity: [
-            {id: 1, text: 'João Souza se inscreveu no curso de Culinária.', time: '2 min atrás', type: 'course'},
-            {id: 2, text: 'Nova tarefa "Visita Domiciliar" criada por Ana Silva.', time: '15 min atrás', type: 'task'},
-            {id: 3, text: 'Nova família "Santos" cadastrada no sistema.', time: '1 hora atrás', type: 'user'},
-            {id: 4, text: 'Tarefa "Relatório Mensal" foi concluída.', time: '3 horas atrás', type: 'task'},
-        ]
-    }
-    return simulateNetworkDelay(stats);
-}
+// export const apiFetchSecretaryStats = (token: string): Promise<SecretaryStats> => {
+//     const stats: SecretaryStats = {
+//         totalBeneficiarios: Object.values(mockUsers).filter(u => u.cargo === 'beneficiario').length,
+//         totalFamilias: mockFamilies.length,
+//         tarefasConcluidasMes: mockTasks.filter(t => t.status === 'Concluido').length, // Simplified
+//         mediaEngajamentoCursos: 78,
+//         tasksByStatus: [
+//             { name: 'Pendente', value: mockTasks.filter(t => t.status === 'Pendente').length },
+//             { name: 'Em Andamento', value: mockTasks.filter(t => t.status === 'Em Andamento').length },
+//             { name: 'Concluído', value: mockTasks.filter(t => t.status === 'Concluido').length },
+//         ],
+//         coursesByCategory: [
+//             { name: 'Tecnologia', value: 15 },
+//             { name: 'Saúde', value: 25 },
+//             { name: 'Negócios', value: 18 },
+//         ],
+//         recentActivity: [
+//             {id: 1, text: 'João Souza se inscreveu no curso de Culinária.', time: '2 min atrás', type: 'course'},
+//             {id: 2, text: 'Nova tarefa "Visita Domiciliar" criada por Ana Silva.', time: '15 min atrás', type: 'task'},
+//             {id: 3, text: 'Nova família "Santos" cadastrada no sistema.', time: '1 hora atrás', type: 'user'},
+//             {id: 4, text: 'Tarefa "Relatório Mensal" foi concluída.', time: '3 horas atrás', type: 'task'},
+//         ]
+//     }
+//     return simulateNetworkDelay(stats);
+// }
 
 export default api;

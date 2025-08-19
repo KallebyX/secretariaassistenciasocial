@@ -1,8 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { api } from '../services/api';
+import { News } from '../types';
 
 const HomePage: React.FC = () => {
+  const [news, setNews] = useState<News[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const response = await api.get('/news');
+        setNews(response.data.data);
+      } catch (err) {
+        setError('Não foi possível carregar as notícias.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.toLocaleDateString('pt-BR', { day: '2-digit' });
+    const month = date.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+    return { day, month };
+  };
+
   return (
     <div className="bg-gray-50">
     <Layout>
@@ -40,26 +69,27 @@ const HomePage: React.FC = () => {
         <section id="noticias" className="mb-16">
           <h2 className="text-4xl font-bold text-gray-800 mb-8 text-center">Últimas Notícias</h2>
           <div className="space-y-10">
-            <div className="bg-white p-8 rounded-xl shadow-lg flex items-start gap-8 hover:shadow-2xl transition-shadow">
-              <div className="flex-shrink-0">
-                <p className="text-prefeitura-vermelho font-bold text-3xl">18</p>
-                <p className="text-gray-500">AGO</p>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold mb-2 text-prefeitura-vermelho">Mutirão de Atendimento do Cadastro Único</h3>
-                <p className="text-gray-600">Neste sábado, a secretaria realizará um mutirão para atualização e novos cadastros no CadÚnico. Uma oportunidade para garantir o acesso a benefícios. Participe!</p>
-              </div>
-            </div>
-            <div className="bg-white p-8 rounded-xl shadow-lg flex items-start gap-8 hover:shadow-2xl transition-shadow">
-               <div className="flex-shrink-0">
-                <p className="text-prefeitura-vermelho font-bold text-3xl">15</p>
-                <p className="text-gray-500">AGO</p>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold mb-2 text-prefeitura-vermelho">Distribuição de Cestas Básicas para Famílias Carentes</h3>
-                <p className="text-gray-600">Mais de 500 famílias foram beneficiadas com a distribuição de alimentos neste mês, uma ação para garantir a segurança alimentar da nossa população.</p>
-              </div>
-            </div>
+            {loading && <p className="text-center">Carregando notícias...</p>}
+            {error && <p className="text-center text-red-500">{error}</p>}
+            {!loading && !error && news.length === 0 && (
+              <p className="text-center text-gray-500">Nenhuma notícia encontrada.</p>
+            )}
+            {news.map((item) => {
+              const { day, month } = formatDate(item.createdAt);
+              return (
+                <div key={item.id} className="bg-white p-8 rounded-xl shadow-lg flex items-start gap-8 hover:shadow-2xl transition-shadow">
+                  <div className="flex-shrink-0 text-center">
+                    <p className="text-prefeitura-vermelho font-bold text-3xl">{day}</p>
+                    <p className="text-gray-500">{month}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2 text-prefeitura-vermelho">{item.title}</h3>
+                    <p className="text-gray-600">{item.content}</p>
+                    <p className="text-sm text-gray-500 mt-2">Por: {item.author}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 

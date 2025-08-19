@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetchSecretaryStats } from '../services/api';
 import type { SecretaryStats } from '../types';
 import { Link } from 'react-router-dom';
+import NewsManager from '../components/NewsManager';
 
 const StatCard: React.FC<{title: string, value: string | number, icon: React.ReactNode, color: string}> = ({ title, value, icon, color }) => (
     <div className="bg-white p-5 rounded-xl shadow-lg flex items-center space-x-4">
@@ -103,6 +104,7 @@ const SecretaryDashboardPage: React.FC = () => {
                      </div>
                 </div>
             </div>
+            <NewsManager />
         </div>
     );
 };

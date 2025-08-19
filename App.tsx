@@ -12,6 +12,9 @@ import RegisterPage from './pages/RegisterPage';
 import BeneficiaryListPage from './pages/admin/BeneficiaryListPage';
 import BeneficiaryProfilePage from './pages/admin/BeneficiaryProfilePage';
 import ProgramManagementPage from './pages/admin/ProgramManagementPage';
+import NewsPage from './pages/news/NewsPage';
+import SingleNewsPage from './pages/news/SingleNewsPage';
+import SchedulePage from './pages/schedule/SchedulePage';
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
@@ -23,6 +26,8 @@ const AppRoutes: React.FC = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/news/:id" element={<SingleNewsPage />} />
           <Route path="/*" element={<Navigate to="/" />} />
         </>
       ) : (
@@ -36,6 +41,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/dashboard" element={<ServerDashboardPage />} />
                     <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
                     <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
+                    <Route path="/schedule" element={<SchedulePage />} />
                     <Route path="/" element={<Navigate to="/dashboard" />} />
                   </>
                 )}
@@ -51,6 +57,9 @@ const AppRoutes: React.FC = () => {
                     <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
                     <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
                     <Route path="/admin/programs" element={<ProgramManagementPage />} />
+                    <Route path="/news" element={<NewsPage />} />
+                    <Route path="/news/:id" element={<SingleNewsPage />} />
+                    <Route path="/schedule" element={<SchedulePage />} />
                     <Route path="/" element={<Navigate to="/secretary" />} />
                   </>
                 )}

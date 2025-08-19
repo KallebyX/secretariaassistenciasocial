@@ -35,24 +35,24 @@ Este documento delineia o plano de desenvolvimento para o sistema completo da Se
 ---
 
 ### **Fase 3: Comunicação e Gestão de Conteúdo**
-- [ ] **Backend:**
-  - [ ] Criar modelo de dados de Notícia/Artigo (Título, Conteúdo, Autor, Data de Publicação).
-  - [ ] Implementar endpoints da API para operações CRUD em Notícias.
-- [ ] **Frontend:**
-  - [ ] Em `SecretaryDashboardPage.tsx`, criar uma seção "Gerenciar Notícias" com um formulário para criar/editar artigos.
-  - [ ] Em `HomePage.tsx`, buscar e exibir as últimas notícias da API.
-  - [ ] Criar uma `NewsPage.tsx` dedicada para ver todas as notícias e uma `SingleNewsPage.tsx` para artigos individuais.
+- [x] **Backend:**
+  - [x] Criar modelo de dados de Notícia/Artigo (Título, Conteúdo, Autor, Data de Publicação).
+  - [x] Implementar endpoints da API para operações CRUD em Notícias.
+- [x] **Frontend:**
+  - [x] Em `SecretaryDashboardPage.tsx`, criar uma seção "Gerenciar Notícias" com um formulário para criar/editar artigos.
+  - [x] Em `HomePage.tsx`, buscar e exibir as últimas notícias da API.
+  - [x] Criar uma `NewsPage.tsx` dedicada para ver todas as notícias e uma `SingleNewsPage.tsx` para artigos individuais.
 
 ---
 
 ### **Fase 4: Agendamentos e Compromissos**
-- [ ] **Backend:**
-  - [ ] Criar modelo de dados de Compromisso (beneficiary_id, server_id, data, hora, motivo, status).
-  - [ ] Implementar API para criar, visualizar e atualizar compromissos.
-- [ ] **Frontend:**
-  - [ ] Criar uma visualização de calendário (`/schedule`) para os servidores verem seus compromissos.
-  - [ ] Permitir que os servidores criem novos compromissos para os beneficiários.
-  - [ ] Na `BeneficiaryPortalPage.tsx`, permitir que os beneficiários visualizem seus próximos compromissos.
+- [x] **Backend:**
+  - [x] Criar modelo de dados de Compromisso (beneficiary_id, server_id, data, hora, motivo, status).
+  - [x] Implementar API para criar, visualizar e atualizar compromissos.
+- [x] **Frontend:**
+  - [x] Criar uma visualização de calendário (`/schedule`) para os servidores verem seus compromissos.
+  - [x] Permitir que os servidores criem novos compromissos para os beneficiários.
+  - [x] Na `BeneficiaryPortalPage.tsx`, permitir que os beneficiários visualizem seus próximos compromissos.
 
 ---
 

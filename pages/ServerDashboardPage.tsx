@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import type { Task, Family } from '../types';
-import { apiFetchTasks, apiUpdateTaskStatus, apiCreateTask, apiFetchFamilies } from '../services/api';
+import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Modal from '../components/Modal';
+import { Link } from 'react-router-dom';
 
 // --- KANBAN COMPONENTS ---
 
@@ -263,6 +264,9 @@ const ServerDashboardPage: React.FC = () => {
         <div className="animate-slide-in">
              <div className="flex justify-between items-center mb-6">
                  <h2 className="text-3xl font-bold text-gray-800">Painel do Servidor</h2>
+                 <Link to="/schedule" className="bg-prefeitura-amarelo hover:opacity-90 text-gray-800 font-bold py-2 px-4 rounded-lg">
+                    Ver Agenda
+                 </Link>
             </div>
            
             <div className="mb-6 bg-white p-2 rounded-lg shadow-sm flex space-x-1 sm:space-x-2">

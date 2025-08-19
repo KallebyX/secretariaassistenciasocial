@@ -68,3 +68,32 @@ export interface SecretaryStats {
     coursesByCategory: { name: string, value: number }[];
     recentActivity: { id: number, text: string, time: string, type: 'user' | 'task' | 'course' }[];
 }
+
+export interface News {
+  id: number;
+  title: string;
+  content: string;
+  author: string;
+  createdAt: string;
+}
+
+export interface Appointment {
+  id: number;
+  beneficiary_id: number;
+  beneficiary_name?: string;
+  server_id?: number;
+  date: string;
+  time: string;
+  reason: string;
+  status: 'Agendado' | 'Realizado' | 'Cancelado';
+}
+
+export interface Beneficiary {
+  id: number;
+  name: string;
+  cpf: string;
+  nis?: string;
+  birthDate?: string;
+  address?: string;
+  phone?: string;
+}

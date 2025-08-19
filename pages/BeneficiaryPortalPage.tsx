@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import type { User, Course, ForumPost, Job } from '../types';
+import type { User, Course, ForumPost, Job, Appointment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { apiFetchProfile, apiFetchCourses, apiEnrollCourse, apiFetchForumPosts, apiCreateForumPost, apiFetchJobs, apiApplyForJob } from '../services/api';
+import { api } from '../services/api';
+import moment from 'moment';
 
-type Tab = 'profile' | 'courses' | 'forum' | 'jobs';
+type Tab = 'profile' | 'courses' | 'forum' | 'jobs' | 'appointments';
 
 const ProgressBar: React.FC<{ value: number; max: number }> = ({ value, max }) => {
     const percentage = max > 0 ? (value / max) * 100 : 0;
@@ -219,11 +220,68 @@ const JobsView: React.FC = () => {
     );
 };
 
+const AppointmentsView: React.FC = () => {
+  const { user } = useAuth();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      if (user) {
+        try {
+          const response = await api.get('/appointments', { params: { beneficiary_id: user.id } });
+          setAppointments(response.data.data);
+        } catch (error) {
+          console.error("Failed to fetch appointments", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchAppointments();
+  }, [user]);
+
+  if (loading) {
+    return <p className="text-center p-4">Carregando seus agendamentos...</p>;
+  }
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <h3 className="text-2xl font-bold text-gray-800 mb-4">Meus Agendamentos</h3>
+      {appointments.length > 0 ? (
+        <ul className="space-y-4">
+          {appointments.map(app => (
+            <li key={app.id} className="p-4 border rounded-lg flex justify-between items-center">
+              <div>
+                <p className="font-bold">{app.reason}</p>
+                <p className="text-sm text-gray-600">
+                  {moment(app.date).format('dddd, DD [de] MMMM [de] YYYY')} às {app.time}
+                </p>
+              </div>
+              <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+                app.status === 'Agendado' ? 'bg-blue-100 text-blue-800' :
+                app.status === 'Realizado' ? 'bg-green-100 text-green-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {app.status}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-gray-500">Você não possui agendamentos.</p>
+      )}
+    </div>
+  );
+};
+
+
 const BeneficiaryPortalPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('profile');
     
     const tabs = [
         { id: 'profile', label: 'Meu Perfil', component: <ProfileView />, icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" /></svg> },
+        { id: 'appointments', label: 'Agendamentos', component: <AppointmentsView />, icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg> },
         { id: 'courses', label: 'Cursos', component: <CoursesView />, icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L9 9.61V16.5a1 1 0 001.521.858l4-2.5a1 1 0 000-1.716V9.61l6.394-2.69a1 1 0 000-1.84l-7-3zM14 8.39l-3 1.265V6.39l3-1.265v3.265z" /></svg> },
         { id: 'forum', label: 'Fórum', component: <ForumView />, icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" /><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h1a2 2 0 002-2V9a2 2 0 00-2-2h-1z" /></svg> },
         { id: 'jobs', label: 'Vagas', component: <JobsView />, icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h2zm8-1a1 1 0 00-1-1H9a1 1 0 00-1 1v1h6V5z" clipRule="evenodd" /></svg> },
