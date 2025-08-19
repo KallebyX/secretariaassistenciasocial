@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetchSecretaryStats } from '../services/api';
 import type { SecretaryStats } from '../types';
+import { Link } from 'react-router-dom';
 
 const StatCard: React.FC<{title: string, value: string | number, icon: React.ReactNode, color: string}> = ({ title, value, icon, color }) => (
     <div className="bg-white p-5 rounded-xl shadow-lg flex items-center space-x-4">
@@ -73,6 +74,14 @@ const SecretaryDashboardPage: React.FC = () => {
         <div className="animate-slide-in">
              <div className="flex justify-between items-center mb-6">
                  <h2 className="text-3xl font-bold text-gray-800">Painel da Secretaria</h2>
+                 <div className="flex gap-4">
+                    <Link to="/admin/beneficiaries" className="bg-prefeitura-verde hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg">
+                        Gerenciar Beneficiários
+                    </Link>
+                    <Link to="/admin/programs" className="bg-prefeitura-amarelo hover:opacity-90 text-gray-800 font-bold py-2 px-4 rounded-lg">
+                        Gerenciar Programas
+                    </Link>
+                 </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">

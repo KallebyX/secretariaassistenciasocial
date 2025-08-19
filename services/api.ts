@@ -1,41 +1,46 @@
+import axios from 'axios';
 import type { User, Task, Course, ForumPost, Job, Family, SecretaryStats } from '../types';
 
+const api = axios.create({
+  baseURL: 'http://localhost:3001/api',
+});
+
 // --- MOCK DATABASE ---
-const mockUsers: { [key: string]: User } = {
-  '11122233344': { id: 1, nome: 'Ana Silva (Servidora)', cpf: '11122233344', cargo: 'servidor', pontos: 0, nivel: 1, pontosProximoNivel: 100, enrolledCourses: [], appliedJobs: [] },
-  '55566677788': { id: 2, nome: 'João Souza (Beneficiário)', cpf: '55566677788', cargo: 'beneficiario', pontos: 125, nivel: 2, pontosProximoNivel: 300, enrolledCourses: [2], appliedJobs: [1] },
-  '99988877766': { id: 3, nome: 'Mariana Costa (Secretária)', cpf: '99988877766', cargo: 'secretario', pontos: 0, nivel: 1, pontosProximoNivel: 100, enrolledCourses: [], appliedJobs: [] },
-};
+// const mockUsers: { [key: string]: User } = {
+//   '11122233344': { id: 1, nome: 'Ana Silva (Servidora)', cpf: '11122233344', cargo: 'servidor', pontos: 0, nivel: 1, pontosProximoNivel: 100, enrolledCourses: [], appliedJobs: [] },
+//   '55566677788': { id: 2, nome: 'João Souza (Beneficiário)', cpf: '55566677788', cargo: 'beneficiario', pontos: 125, nivel: 2, pontosProximoNivel: 300, enrolledCourses: [2], appliedJobs: [1] },
+//   '99988877766': { id: 3, nome: 'Mariana Costa (Secretária)', cpf: '99988877766', cargo: 'secretario', pontos: 0, nivel: 1, pontosProximoNivel: 100, enrolledCourses: [], appliedJobs: [] },
+// };
 
-let mockTasks: Task[] = [
-  { id: 1, titulo: 'Revisar cadastro Família Oliveira', descricao: 'Verificar documentos pendentes e atualizar o endereço no sistema.', status: 'Pendente', servidor_id: 1, prioridade: 'Alta', familiaAssociada: 'Família Oliveira', dataCriacao: '2023-10-26' },
-  { id: 2, titulo: 'Contato com CRAS sobre o caso X', descricao: 'Agendar visita domiciliar para a próxima semana.', status: 'Em Andamento', servidor_id: 1, prioridade: 'Média', familiaAssociada: 'Caso X', dataCriacao: '2023-10-25' },
-  { id: 3, titulo: 'Finalizar relatório mensal', descricao: 'Compilar dados de atendimento do mês de Outubro.', status: 'Concluido', servidor_id: 1, prioridade: 'Baixa', dataCriacao: '2023-10-20' },
-  { id: 4, titulo: 'Acompanhamento do Sr. José', descricao: 'Ligar para verificar a situação e agendar retorno.', status: 'Pendente', servidor_id: 1, prioridade: 'Média', familiaAssociada: 'Sr. José', dataCriacao: '2023-10-27' },
-];
+// let mockTasks: Task[] = [
+//   { id: 1, titulo: 'Revisar cadastro Família Oliveira', descricao: 'Verificar documentos pendentes e atualizar o endereço no sistema.', status: 'Pendente', servidor_id: 1, prioridade: 'Alta', familiaAssociada: 'Família Oliveira', dataCriacao: '2023-10-26' },
+//   { id: 2, titulo: 'Contato com CRAS sobre o caso X', descricao: 'Agendar visita domiciliar para a próxima semana.', status: 'Em Andamento', servidor_id: 1, prioridade: 'Média', familiaAssociada: 'Caso X', dataCriacao: '2023-10-25' },
+//   { id: 3, titulo: 'Finalizar relatório mensal', descricao: 'Compilar dados de atendimento do mês de Outubro.', status: 'Concluido', servidor_id: 1, prioridade: 'Baixa', dataCriacao: '2023-10-20' },
+//   { id: 4, titulo: 'Acompanhamento do Sr. José', descricao: 'Ligar para verificar a situação e agendar retorno.', status: 'Pendente', servidor_id: 1, prioridade: 'Média', familiaAssociada: 'Sr. José', dataCriacao: '2023-10-27' },
+// ];
 
-const mockCourses: Course[] = [
-    { id: 1, titulo: 'Curso de Informática Básica', descricao: 'Aprenda o essencial de computadores e internet.', categoria: 'Tecnologia' },
-    { id: 2, titulo: 'Oficina de Culinária Saudável', descricao: 'Receitas fáceis e nutritivas para o dia a dia.', categoria: 'Saúde' },
-    { id: 3, titulo: 'Capacitação para Empreendedores', descricao: 'Como iniciar e gerir seu próprio negócio.', categoria: 'Negócios' },
-];
+// const mockCourses: Course[] = [
+//     { id: 1, titulo: 'Curso de Informática Básica', descricao: 'Aprenda o essencial de computadores e internet.', categoria: 'Tecnologia' },
+//     { id: 2, titulo: 'Oficina de Culinária Saudável', descricao: 'Receitas fáceis e nutritivas para o dia a dia.', categoria: 'Saúde' },
+//     { id: 3, titulo: 'Capacitação para Empreendedores', descricao: 'Como iniciar e gerir seu próprio negócio.', categoria: 'Negócios' },
+// ];
 
-let mockForumPosts: ForumPost[] = [
-    { id: 1, titulo: 'Dúvida sobre o Bolsa Família', conteudo: 'Alguém sabe quando sai o próximo pagamento?', autor_nome: 'Maria Pereira', data: '2023-10-26', respostas: 5, curtidas: 12 },
-    { id: 2, titulo: 'Oportunidade de trabalho voluntário', conteudo: 'Estou procurando voluntários para um evento na comunidade no próximo sábado.', autor_nome: 'Carlos Andrade', data: '2023-10-25', respostas: 2, curtidas: 8 },
-];
+// let mockForumPosts: ForumPost[] = [
+//     { id: 1, titulo: 'Dúvida sobre o Bolsa Família', conteudo: 'Alguém sabe quando sai o próximo pagamento?', autor_nome: 'Maria Pereira', data: '2023-10-26', respostas: 5, curtidas: 12 },
+//     { id: 2, titulo: 'Oportunidade de trabalho voluntário', conteudo: 'Estou procurando voluntários para um evento na comunidade no próximo sábado.', autor_nome: 'Carlos Andrade', data: '2023-10-25', respostas: 2, curtidas: 8 },
+// ];
 
-const mockJobs: Job[] = [
-    { id: 1, titulo: 'Auxiliar de Limpeza', empresa: 'Supermercado Preço Bom', descricao: 'Vaga para período integral. Requer experiência mínima de 6 meses.', localidade: 'Centro', tipo: 'Integral' },
-    { id: 2, titulo: 'Atendente de Loja', empresa: 'Varejo & Cia', descricao: 'Vaga de 6h/dia. Boa comunicação é essencial.', localidade: 'Bairro Sul', tipo: 'Meio Período' },
-    { id: 3, titulo: 'Desenvolvedor Web Jr (Remoto)', empresa: 'Tech Solutions', descricao: 'Oportunidade para iniciantes em desenvolvimento web. Conhecimento em React é um diferencial.', localidade: 'Remoto', tipo: 'Remoto' },
-];
+// const mockJobs: Job[] = [
+//     { id: 1, titulo: 'Auxiliar de Limpeza', empresa: 'Supermercado Preço Bom', descricao: 'Vaga para período integral. Requer experiência mínima de 6 meses.', localidade: 'Centro', tipo: 'Integral' },
+//     { id: 2, titulo: 'Atendente de Loja', empresa: 'Varejo & Cia', descricao: 'Vaga de 6h/dia. Boa comunicação é essencial.', localidade: 'Bairro Sul', tipo: 'Meio Período' },
+//     { id: 3, titulo: 'Desenvolvedor Web Jr (Remoto)', empresa: 'Tech Solutions', descricao: 'Oportunidade para iniciantes em desenvolvimento web. Conhecimento em React é um diferencial.', localidade: 'Remoto', tipo: 'Remoto' },
+// ];
 
-const mockFamilies: Family[] = [
-    { id: 1, nome_responsavel: 'Fernanda Oliveira', cpf_responsavel: '12345678901', renda_familiar: 1200.50, bairro: 'Centro', membros: 4, cadunico_atualizado: true, data_cadastro: '2023-01-15' },
-    { id: 2, nome_responsavel: 'Ricardo Santos', cpf_responsavel: '23456789012', renda_familiar: 850.00, bairro: 'Vila Nova', membros: 3, cadunico_atualizado: false, data_cadastro: '2022-11-30' },
-    { id: 3, nome_responsavel: 'Camila Lima', cpf_responsavel: '34567890123', renda_familiar: 2100.00, bairro: 'Jardim das Flores', membros: 5, cadunico_atualizado: true, data_cadastro: '2023-05-20' },
-];
+// const mockFamilies: Family[] = [
+//     { id: 1, nome_responsavel: 'Fernanda Oliveira', cpf_responsavel: '12345678901', renda_familiar: 1200.50, bairro: 'Centro', membros: 4, cadunico_atualizado: true, data_cadastro: '2023-01-15' },
+//     { id: 2, nome_responsavel: 'Ricardo Santos', cpf_responsavel: '23456789012', renda_familiar: 850.00, bairro: 'Vila Nova', membros: 3, cadunico_atualizado: false, data_cadastro: '2022-11-30' },
+//     { id: 3, nome_responsavel: 'Camila Lima', cpf_responsavel: '34567890123', renda_familiar: 2100.00, bairro: 'Jardim das Flores', membros: 5, cadunico_atualizado: true, data_cadastro: '2023-05-20' },
+// ];
 
 
 // --- MOCK API FUNCTIONS ---
@@ -190,3 +195,5 @@ export const apiFetchSecretaryStats = (token: string): Promise<SecretaryStats> =
     }
     return simulateNetworkDelay(stats);
 }
+
+export default api;

@@ -7,22 +7,36 @@ import ServerDashboardPage from './pages/ServerDashboardPage';
 import BeneficiaryPortalPage from './pages/BeneficiaryPortalPage';
 import SecretaryDashboardPage from './pages/SecretaryDashboardPage';
 import Layout from './components/Layout';
+import HomePage from './pages/HomePage';
+import RegisterPage from './pages/RegisterPage';
+import BeneficiaryListPage from './pages/admin/BeneficiaryListPage';
+import BeneficiaryProfilePage from './pages/admin/BeneficiaryProfilePage';
+import BeneficiaryFormPage from './pages/admin/BeneficiaryFormPage';
+import ProgramManagementPage from './pages/admin/ProgramManagementPage';
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
 
   return (
     <Routes>
-      <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
-      <Route
-        path="/*"
-        element={
-          user ? (
+      {!user ? (
+        <>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/*" element={<Navigate to="/" />} />
+        </>
+      ) : (
+        <Route
+          path="/*"
+          element={
             <Layout>
               <Routes>
                 {user.cargo === 'servidor' && (
                   <>
                     <Route path="/dashboard" element={<ServerDashboardPage />} />
+                    <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
+                    <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
                     <Route path="/" element={<Navigate to="/dashboard" />} />
                   </>
                 )}
@@ -33,19 +47,23 @@ const AppRoutes: React.FC = () => {
                   </>
                 )}
                 {user.cargo === 'secretario' && (
-                    <>
-                      <Route path="/secretary" element={<SecretaryDashboardPage />} />
-                      <Route path="/" element={<Navigate to="/secretary" />} />
-                    </>
+                  <>
+                    <Route path="/secretary" element={<SecretaryDashboardPage />} />
+                    <Route path="/admin/beneficiaries" element={<BeneficiaryListPage />} />
+                    <Route path="/admin/beneficiaries/:id" element={<BeneficiaryProfilePage />} />
+                    <Route path="/admin/beneficiaries/new" element={<BeneficiaryFormPage />} />
+                    <Route path="/admin/beneficiaries/:id/edit" element={<BeneficiaryFormPage />} />
+                    <Route path="/admin/programs" element={<ProgramManagementPage />} />
+                    <Route path="/" element={<Navigate to="/secretary" />} />
+                  </>
                 )}
-                 <Route path="*" element={<Navigate to="/" />} />
+                <Route path="/home" element={<HomePage />} />
+                <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </Layout>
-          ) : (
-            <Navigate to="/login" />
-          )
-        }
-      />
+          }
+        />
+      )}
     </Routes>
   );
 };

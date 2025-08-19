@@ -8,15 +8,15 @@ const Header: React.FC = () => {
     const { user, logout } = useAuth();
 
     return (
-        <header className="bg-white shadow-sm sticky top-0 z-10">
+        <header className="bg-prefeitura-verde text-white shadow-md sticky top-0 z-10">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center py-3">
                     <div className="flex items-center space-x-3">
-                         <CacapavaDoSulIcon className="w-10 h-10" />
-                        <h1 className="text-xl font-bold text-gray-800">
+                         <CacapavaDoSulIcon className="w-12 h-12" />
+                        <h1 className="text-xl font-bold">
                             <span className="hidden sm:inline">Assistência Social</span>
                              <span className="sm:hidden">SAS</span>
-                            <span className="block text-xs font-normal text-brand-primary-900">Caçapava do Sul</span>
+                            <span className="block text-xs font-normal text-prefeitura-amarelo">Caçapava do Sul</span>
                         </h1>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -38,6 +38,33 @@ const Header: React.FC = () => {
 };
 
 
+const VLibras: React.FC = () => {
+  React.useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://vlibras.gov.br/app/vlibras-plugin.js';
+    script.async = true;
+    script.onload = () => {
+      // @ts-ignore
+      new window.VLibras.Widget('https://vlibras.gov.br/app');
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    }
+  }, []);
+
+  return (
+    <div vw="true" className="enabled">
+      <div vw-access-button="true" className="active"></div>
+      <div vw-plugin-wrapper="true">
+        <div className="vw-plugin-top-wrapper"></div>
+      </div>
+    </div>
+  );
+}
+
+
 const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
     return (
         <div className="min-h-screen flex flex-col font-sans">
@@ -46,6 +73,7 @@ const Layout: React.FC<{ children: ReactNode }> = ({ children }) => {
                 {children}
             </main>
             <ToastContainer />
+            <VLibras />
         </div>
     );
 };
